@@ -1,729 +1,733 @@
-// Question generation system with variety and difficulty scaling
+// Dynamic question generation system - generates unique questions each round
 
 export interface Question {
   question: string;
   answer: string;
-  difficulty: number; // 1-10
+  difficulty: number;
 }
 
-type QuestionPool = Question[];
+// Template-based generators that produce different questions each time
+type QuestionGenerator = (difficulty: number) => Question;
 
-const questionPools: Record<string, QuestionPool> = {
-  "MCU": [
-    { question: "Chi interpreta Tony Stark nel MCU?", answer: "Robert Downey Jr.", difficulty: 1 },
-    { question: "Come si chiama il martello di Thor?", answer: "Mjolnir", difficulty: 1 },
-    { question: "In quale film appare per la prima volta Spider-Man nel MCU?", answer: "Captain America: Civil War", difficulty: 2 },
-    { question: "Qual è il vero nome di Black Widow?", answer: "Natasha Romanoff", difficulty: 2 },
-    { question: "Chi è il villain principale di Avengers: Infinity War?", answer: "Thanos", difficulty: 1 },
-    { question: "Quale Gemma dell'Infinito si trova nella Mente di Vision?", answer: "La Gemma della Mente", difficulty: 3 },
-    { question: "Come si chiama il pianeta natale di Thor?", answer: "Asgard", difficulty: 2 },
-    { question: "Chi è il regista di Avengers: Endgame?", answer: "Anthony e Joe Russo", difficulty: 4 },
-    { question: "Qual è il nome del gatto di Nick Fury in Captain Marvel?", answer: "Goose (un Flerken)", difficulty: 5 },
-    { question: "In quale anno è ambientato il prologo di Black Panther?", answer: "1992", difficulty: 6 },
-    { question: "Come si chiama l'organizzazione segreta infiltrata nello S.H.I.E.L.D.?", answer: "HYDRA", difficulty: 3 },
-    { question: "Quante Gemme dell'Infinito esistono?", answer: "Sei", difficulty: 2 },
-    { question: "Chi ha creato Ultron?", answer: "Tony Stark e Bruce Banner", difficulty: 3 },
-    { question: "Qual è il nome del regno di T'Challa?", answer: "Wakanda", difficulty: 1 },
-    { question: "Come si chiama la sostanza che alimenta il cuore di Wakanda?", answer: "Vibranio (Vibranium)", difficulty: 3 },
-    { question: "Chi interpreta il Capitano America?", answer: "Chris Evans", difficulty: 1 },
-    { question: "In quale film muore Tony Stark?", answer: "Avengers: Endgame", difficulty: 2 },
-    { question: "Come si chiama la figlia di Tony Stark?", answer: "Morgan Stark", difficulty: 4 },
-    { question: "Chi è il Sorcerer Supreme prima di Doctor Strange?", answer: "L'Antico (The Ancient One)", difficulty: 4 },
-    { question: "Qual è il numero dell'universo principale del MCU nel multiverso?", answer: "Terra-616", difficulty: 6 },
-    { question: "In quale pianeta Star-Lord è stato rapito da bambino?", answer: "Terra (Missouri)", difficulty: 5 },
-    { question: "Come si chiama l'intelligenza artificiale che sostituisce J.A.R.V.I.S.?", answer: "F.R.I.D.A.Y.", difficulty: 5 },
-    { question: "Chi è il padre biologico di Star-Lord?", answer: "Ego", difficulty: 4 },
-    { question: "Quale attore interpreta Loki?", answer: "Tom Hiddleston", difficulty: 2 },
-    { question: "In quale Avengers appare per la prima volta la Scarlet Witch?", answer: "Avengers: Age of Ultron", difficulty: 3 },
-    { question: "Come si chiama il metallo dello scudo di Cap?", answer: "Vibranio", difficulty: 3 },
-    { question: "Quale personaggio dice 'I am Groot'?", answer: "Groot", difficulty: 1 },
-    { question: "Chi ha sacrificato la propria vita su Vormir per la Gemma dell'Anima in Endgame?", answer: "Natasha Romanoff (Black Widow)", difficulty: 4 },
-    { question: "Quanti film ha la Fase 1 del MCU?", answer: "Sei", difficulty: 6 },
-    { question: "Chi interpreta Shang-Chi?", answer: "Simu Liu", difficulty: 5 },
-  ],
-  "Storia": [
-    { question: "In che anno è caduto il Muro di Berlino?", answer: "1989", difficulty: 1 },
-    { question: "Chi era il primo imperatore romano?", answer: "Augusto (Ottaviano)", difficulty: 2 },
-    { question: "In che anno Cristoforo Colombo raggiunse l'America?", answer: "1492", difficulty: 1 },
-    { question: "Quale civiltà costruì Machu Picchu?", answer: "Gli Inca", difficulty: 2 },
-    { question: "Chi è stato l'ultimo Re d'Italia?", answer: "Umberto II", difficulty: 4 },
-    { question: "In che anno iniziò la Prima Guerra Mondiale?", answer: "1914", difficulty: 2 },
-    { question: "Chi ha scritto il Manifesto del Partito Comunista?", answer: "Karl Marx e Friedrich Engels", difficulty: 3 },
-    { question: "Quale trattato pose fine alla Prima Guerra Mondiale?", answer: "Trattato di Versailles", difficulty: 3 },
-    { question: "Chi era la regina d'Egitto alleata di Marco Antonio?", answer: "Cleopatra VII", difficulty: 2 },
-    { question: "In che anno fu fondata Roma secondo la tradizione?", answer: "753 a.C.", difficulty: 3 },
-    { question: "Chi guidò la Marcia su Roma nel 1922?", answer: "Benito Mussolini", difficulty: 2 },
-    { question: "Cosa fu la Peste Nera?", answer: "Un'epidemia di peste bubbonica nel XIV secolo", difficulty: 3 },
-    { question: "Chi inventò la stampa a caratteri mobili?", answer: "Johannes Gutenberg", difficulty: 2 },
-    { question: "In che anno fu proclamata l'Unità d'Italia?", answer: "1861", difficulty: 2 },
-    { question: "Chi fu il primo presidente degli Stati Uniti?", answer: "George Washington", difficulty: 1 },
-    { question: "In quale battaglia Napoleone fu definitivamente sconfitto?", answer: "Waterloo", difficulty: 2 },
-    { question: "Chi era l'eroe dei due mondi?", answer: "Giuseppe Garibaldi", difficulty: 2 },
-    { question: "In che anno avvenne la Rivoluzione Francese?", answer: "1789", difficulty: 1 },
-    { question: "Chi fu l'ultimo faraone d'Egitto?", answer: "Cleopatra VII", difficulty: 4 },
-    { question: "Quale imperatore romano legalizzò il Cristianesimo?", answer: "Costantino I (Editto di Milano, 313 d.C.)", difficulty: 4 },
-    { question: "In che anno cadde l'Impero Romano d'Occidente?", answer: "476 d.C.", difficulty: 3 },
-    { question: "Quale evento scatenò la Prima Guerra Mondiale?", answer: "L'assassinio dell'arciduca Francesco Ferdinando a Sarajevo", difficulty: 3 },
-    { question: "Chi fu il primo uomo a camminare sulla Luna?", answer: "Neil Armstrong", difficulty: 1 },
-    { question: "In che anno iniziò la Seconda Guerra Mondiale?", answer: "1939", difficulty: 1 },
-    { question: "Cosa fu la Guerra dei Cent'Anni?", answer: "Un conflitto tra Inghilterra e Francia (1337-1453)", difficulty: 5 },
-    { question: "Chi scrisse 'Il Principe'?", answer: "Niccolò Machiavelli", difficulty: 3 },
-    { question: "Quale civiltà inventò la scrittura cuneiforme?", answer: "I Sumeri", difficulty: 5 },
-    { question: "In che anno fu firmata la Dichiarazione d'Indipendenza americana?", answer: "1776", difficulty: 2 },
-    { question: "Chi era il condottiero cartaginese che attraversò le Alpi con gli elefanti?", answer: "Annibale Barca", difficulty: 3 },
-    { question: "Quale paese lanciò lo Sputnik, il primo satellite artificiale?", answer: "Unione Sovietica", difficulty: 3 },
-  ],
-  "Scienza": [
-    { question: "Qual è il simbolo chimico dell'acqua?", answer: "H₂O", difficulty: 1 },
-    { question: "Quale scienziato formulò la teoria della relatività?", answer: "Albert Einstein", difficulty: 1 },
-    { question: "Quanti cromosomi ha una cellula umana?", answer: "46", difficulty: 2 },
-    { question: "Qual è l'elemento più abbondante nell'universo?", answer: "Idrogeno", difficulty: 2 },
-    { question: "Cosa misura il pH?", answer: "L'acidità o basicità di una soluzione", difficulty: 2 },
-    { question: "Chi ha scoperto la penicillina?", answer: "Alexander Fleming", difficulty: 2 },
-    { question: "Qual è la velocità della luce nel vuoto?", answer: "Circa 300.000 km/s", difficulty: 3 },
-    { question: "Cosa studia la tassonomia?", answer: "La classificazione degli organismi viventi", difficulty: 4 },
-    { question: "Qual è la formula dell'energia secondo Einstein?", answer: "E = mc²", difficulty: 2 },
-    { question: "Quanti stati della materia esistono comunemente?", answer: "Quattro: solido, liquido, gassoso, plasma", difficulty: 3 },
-    { question: "Cos'è il DNA?", answer: "Acido desossiribonucleico, la molecola che contiene le informazioni genetiche", difficulty: 2 },
-    { question: "Chi formulò le tre leggi del moto?", answer: "Isaac Newton", difficulty: 2 },
-    { question: "Qual è il punto di ebollizione dell'acqua al livello del mare?", answer: "100°C", difficulty: 1 },
-    { question: "Qual è l'organo più grande del corpo umano?", answer: "La pelle", difficulty: 2 },
-    { question: "Cosa sono i mitocondri?", answer: "Gli organelli cellulari responsabili della produzione di energia (ATP)", difficulty: 4 },
-    { question: "Chi ha proposto la tavola periodica degli elementi?", answer: "Dmitrij Mendeleev", difficulty: 3 },
-    { question: "Quanti elementi ci sono nella tavola periodica (approvati)?", answer: "118", difficulty: 4 },
-    { question: "Cos'è la fotosintesi?", answer: "Il processo con cui le piante convertono luce, CO₂ e acqua in glucosio e ossigeno", difficulty: 2 },
-    { question: "Qual è la particella subatomica con carica negativa?", answer: "L'elettrone", difficulty: 2 },
-    { question: "Cosa significa 'mole' in chimica?", answer: "Una quantità pari a 6,022 × 10²³ entità (numero di Avogadro)", difficulty: 5 },
-    { question: "Quale gas è essenziale per la respirazione umana?", answer: "Ossigeno", difficulty: 1 },
-    { question: "Qual è il nome del processo di divisione cellulare?", answer: "Mitosi (e Meiosi per le cellule riproduttive)", difficulty: 3 },
-    { question: "Quale forza tiene i pianeti in orbita?", answer: "La forza di gravità", difficulty: 2 },
-    { question: "Cos'è un isotopo?", answer: "Un atomo con lo stesso numero di protoni ma diverso numero di neutroni", difficulty: 5 },
-    { question: "Chi ha scoperto la struttura a doppia elica del DNA?", answer: "Watson e Crick (con il contributo di Rosalind Franklin)", difficulty: 4 },
-    { question: "Quanti litri di sangue ha in media un adulto?", answer: "Circa 5 litri", difficulty: 3 },
-    { question: "Quale gas è prodotto dalla fotosintesi?", answer: "Ossigeno", difficulty: 1 },
-    { question: "Cos'è un buco nero?", answer: "Una regione dello spazio con gravità così intensa che nulla può sfuggirne", difficulty: 3 },
-    { question: "Qual è la legge di conservazione dell'energia?", answer: "L'energia non si crea né si distrugge, ma si trasforma", difficulty: 3 },
-    { question: "Quale scienziato è noto per i suoi esperimenti con i piselli?", answer: "Gregor Mendel", difficulty: 4 },
-  ],
-  "Spazio": [
-    { question: "Qual è il pianeta più grande del Sistema Solare?", answer: "Giove", difficulty: 1 },
-    { question: "Quanto tempo impiega la luce del Sole a raggiungere la Terra?", answer: "Circa 8 minuti", difficulty: 2 },
-    { question: "Qual è il nome della nostra galassia?", answer: "Via Lattea", difficulty: 1 },
-    { question: "Quale pianeta è noto come il Pianeta Rosso?", answer: "Marte", difficulty: 1 },
-    { question: "Chi è stato il primo uomo nello spazio?", answer: "Jurij Gagarin", difficulty: 2 },
-    { question: "Quanti pianeti ci sono nel Sistema Solare?", answer: "Otto", difficulty: 1 },
-    { question: "Cos'è un anno luce?", answer: "La distanza percorsa dalla luce in un anno (circa 9.461 miliardi di km)", difficulty: 3 },
-    { question: "Qual è la stella più vicina alla Terra dopo il Sole?", answer: "Proxima Centauri", difficulty: 3 },
-    { question: "Come si chiama il rover della NASA atterrato su Marte nel 2021?", answer: "Perseverance", difficulty: 3 },
-    { question: "Cos'è la ISS?", answer: "La Stazione Spaziale Internazionale", difficulty: 2 },
-    { question: "Quale pianeta ha il maggior numero di lune?", answer: "Saturno", difficulty: 4 },
-    { question: "Cos'è una supernova?", answer: "L'esplosione di una stella massiccia alla fine del suo ciclo vitale", difficulty: 3 },
-    { question: "Qual è il pianeta più caldo del Sistema Solare?", answer: "Venere", difficulty: 3 },
-    { question: "Come si chiama la più grande luna di Giove?", answer: "Ganimede", difficulty: 4 },
-    { question: "Cosa sono gli anelli di Saturno composti principalmente?", answer: "Ghiaccio e roccia", difficulty: 3 },
-    { question: "Quale missione portò il primo uomo sulla Luna?", answer: "Apollo 11", difficulty: 2 },
-    { question: "Cosa significa il termine 'esopianeta'?", answer: "Un pianeta che orbita attorno a una stella diversa dal Sole", difficulty: 3 },
-    { question: "Qual è il pianeta più piccolo del Sistema Solare?", answer: "Mercurio", difficulty: 2 },
-    { question: "Cos'è la fascia di Kuiper?", answer: "Una regione di corpi ghiacciati oltre l'orbita di Nettuno", difficulty: 5 },
-    { question: "Chi ha formulato le leggi del moto planetario?", answer: "Giovanni Keplero", difficulty: 4 },
-    { question: "Quale sonda ha lasciato il Sistema Solare per prima?", answer: "Voyager 1", difficulty: 4 },
-    { question: "Cos'è la materia oscura?", answer: "Una forma ipotetica di materia che non emette luce ma esercita gravità", difficulty: 5 },
-    { question: "Quale telescopio spaziale è stato lanciato nel 2021?", answer: "James Webb Space Telescope", difficulty: 3 },
-    { question: "Quanto dura un giorno su Venere rispetto a un anno venusiano?", answer: "Un giorno venusiano è più lungo del suo anno", difficulty: 6 },
-    { question: "Cos'è la radiazione cosmica di fondo?", answer: "La radiazione residua del Big Bang", difficulty: 6 },
-    { question: "Quale pianeta ruota su un asse quasi orizzontale?", answer: "Urano", difficulty: 5 },
-    { question: "Come si chiama la grande macchia rossa su Giove?", answer: "Una tempesta anticiclonica gigante", difficulty: 4 },
-    { question: "Chi fondò SpaceX?", answer: "Elon Musk", difficulty: 1 },
-    { question: "Qual è la temperatura superficiale del Sole?", answer: "Circa 5.500°C", difficulty: 5 },
-    { question: "Quale agenzia spaziale italiana collabora con l'ESA?", answer: "ASI (Agenzia Spaziale Italiana)", difficulty: 4 },
-  ],
-  "Geografia": [
-    { question: "Qual è la capitale dell'Australia?", answer: "Canberra", difficulty: 2 },
-    { question: "Qual è il fiume più lungo del mondo?", answer: "Il Nilo (o il Rio delle Amazzoni secondo alcune misurazioni)", difficulty: 2 },
-    { question: "In quale continente si trova il deserto del Sahara?", answer: "Africa", difficulty: 1 },
-    { question: "Qual è il paese più grande del mondo per superficie?", answer: "Russia", difficulty: 1 },
-    { question: "Quale oceano è il più grande?", answer: "Oceano Pacifico", difficulty: 1 },
-    { question: "Qual è la montagna più alta del mondo?", answer: "Monte Everest", difficulty: 1 },
-    { question: "Quanti continenti ci sono?", answer: "Sette", difficulty: 1 },
-    { question: "Qual è la capitale del Canada?", answer: "Ottawa", difficulty: 2 },
-    { question: "In quale paese si trova il Monte Fuji?", answer: "Giappone", difficulty: 2 },
-    { question: "Qual è il lago più grande del mondo?", answer: "Mar Caspio", difficulty: 3 },
-    { question: "Quale stretto separa Europa e Asia?", answer: "Stretto del Bosforo", difficulty: 3 },
-    { question: "Qual è l'isola più grande del mondo?", answer: "Groenlandia", difficulty: 2 },
-    { question: "In quale paese si trova Machu Picchu?", answer: "Perù", difficulty: 2 },
-    { question: "Qual è la capitale della Mongolia?", answer: "Ulaanbaatar", difficulty: 5 },
-    { question: "Quale fiume attraversa Parigi?", answer: "La Senna", difficulty: 2 },
-    { question: "Qual è il vulcano più alto d'Europa?", answer: "Etna", difficulty: 3 },
-    { question: "Quante regioni ha l'Italia?", answer: "20", difficulty: 2 },
-    { question: "Qual è la capitale del Brasile?", answer: "Brasilia", difficulty: 2 },
-    { question: "In quale oceano si trova il Madagascar?", answer: "Oceano Indiano", difficulty: 2 },
-    { question: "Quale paese ha la forma di uno stivale?", answer: "Italia", difficulty: 1 },
-    { question: "Qual è la catena montuosa più lunga del mondo?", answer: "Le Ande", difficulty: 3 },
-    { question: "Dove si trova la Grande Barriera Corallina?", answer: "Australia", difficulty: 2 },
-    { question: "Qual è il punto più profondo degli oceani?", answer: "Fossa delle Marianne", difficulty: 3 },
-    { question: "Quale capitale europea è divisa da un fiume chiamato Danubio?", answer: "Budapest", difficulty: 3 },
-    { question: "Qual è il deserto più grande del mondo (non di sabbia)?", answer: "Antartide", difficulty: 5 },
-    { question: "In quale paese si trovano le cascate del Niagara?", answer: "Canada e USA (al confine)", difficulty: 2 },
-    { question: "Qual è la nazione più piccola del mondo?", answer: "Città del Vaticano", difficulty: 2 },
-    { question: "Quale paese ha più fusi orari?", answer: "Francia (12 fusi orari)", difficulty: 6 },
-    { question: "Dove si trova il Lago Titicaca?", answer: "Tra Perù e Bolivia", difficulty: 4 },
-    { question: "Qual è il fiume più lungo d'Europa?", answer: "Volga", difficulty: 4 },
-  ],
-  "Italiano": [
-    { question: "Chi ha scritto 'La Divina Commedia'?", answer: "Dante Alighieri", difficulty: 1 },
-    { question: "Qual è il plurale di 'uomo'?", answer: "Uomini", difficulty: 1 },
-    { question: "Cos'è un ossimoro?", answer: "Una figura retorica che accosta due termini contraddittori", difficulty: 3 },
-    { question: "Chi ha scritto 'I Promessi Sposi'?", answer: "Alessandro Manzoni", difficulty: 1 },
-    { question: "Come si chiama la prima cantica della Divina Commedia?", answer: "Inferno", difficulty: 1 },
-    { question: "Cos'è un sonetto?", answer: "Un componimento poetico di 14 versi (due quartine e due terzine)", difficulty: 3 },
-    { question: "Chi era la donna amata da Dante?", answer: "Beatrice", difficulty: 2 },
-    { question: "Cos'è un'anastrofe?", answer: "L'inversione dell'ordine normale delle parole", difficulty: 5 },
-    { question: "Chi ha scritto 'Il Decameron'?", answer: "Giovanni Boccaccio", difficulty: 2 },
-    { question: "Qual è la differenza tra 'che' e 'ché'?", answer: "'Che' è congiunzione/pronome, 'ché' significa 'perché'", difficulty: 4 },
-    { question: "Chi scrisse 'Il Canzoniere'?", answer: "Francesco Petrarca", difficulty: 2 },
-    { question: "Cos'è una metafora?", answer: "Una figura retorica che trasferisce il significato da un termine a un altro", difficulty: 2 },
-    { question: "Quanti canti ha l'Inferno di Dante?", answer: "34", difficulty: 3 },
-    { question: "Chi è l'autore di 'Pinocchio'?", answer: "Carlo Collodi", difficulty: 2 },
-    { question: "Cos'è un endecasillabo?", answer: "Un verso di undici sillabe", difficulty: 3 },
-    { question: "Chi scrisse 'I Malavoglia'?", answer: "Giovanni Verga", difficulty: 3 },
-    { question: "Cos'è il congiuntivo?", answer: "Un modo verbale che esprime dubbio, desiderio, possibilità", difficulty: 2 },
-    { question: "Chi era la guida di Dante nell'Inferno?", answer: "Virgilio", difficulty: 2 },
-    { question: "Cos'è un'allitterazione?", answer: "La ripetizione di suoni simili all'inizio di parole vicine", difficulty: 4 },
-    { question: "Chi scrisse 'Sei personaggi in cerca d'autore'?", answer: "Luigi Pirandello", difficulty: 3 },
-    { question: "Cos'è un complemento oggetto?", answer: "Il complemento che indica la persona o cosa su cui ricade l'azione", difficulty: 2 },
-    { question: "Chi ha scritto 'Il fu Mattia Pascal'?", answer: "Luigi Pirandello", difficulty: 3 },
-    { question: "Qual è il significato di 'enjambement'?", answer: "La continuazione del senso di un verso nel verso successivo", difficulty: 4 },
-    { question: "Chi ha scritto 'Ultimo viene il corvo'?", answer: "Italo Calvino", difficulty: 4 },
-    { question: "Cosa sono i versi sciolti?", answer: "Endecasillabi non rimati", difficulty: 5 },
-    { question: "Chi ha vinto il Nobel per la letteratura nel 1934 tra gli italiani?", answer: "Luigi Pirandello", difficulty: 5 },
-    { question: "Cos'è la sineddoche?", answer: "Una figura retorica in cui si usa la parte per il tutto o viceversa", difficulty: 5 },
-    { question: "Chi è l'autore di 'Zeno Cosini'?", answer: "Italo Svevo", difficulty: 4 },
-    { question: "Quale opera di Leopardi contiene 'L'Infinito'?", answer: "I Canti (Idilli)", difficulty: 4 },
-    { question: "Cos'è l'iperbole?", answer: "Un'esagerazione espressiva", difficulty: 3 },
-  ],
-  "Matematica": [
-    { question: "Quanto fa 7 × 8?", answer: "56", difficulty: 1 },
-    { question: "Qual è la radice quadrata di 144?", answer: "12", difficulty: 1 },
-    { question: "Cos'è il numero pi greco (π)?", answer: "Il rapporto tra la circonferenza e il diametro di un cerchio (≈ 3,14159)", difficulty: 2 },
-    { question: "Qual è la formula dell'area del cerchio?", answer: "πr²", difficulty: 2 },
-    { question: "Cos'è un numero primo?", answer: "Un numero divisibile solo per 1 e per sé stesso", difficulty: 2 },
-    { question: "Qual è il risultato di 2⁸?", answer: "256", difficulty: 3 },
-    { question: "Cos'è il teorema di Pitagora?", answer: "a² + b² = c² (il quadrato dell'ipotenusa uguale alla somma dei quadrati dei cateti)", difficulty: 2 },
-    { question: "Qual è la derivata di x²?", answer: "2x", difficulty: 3 },
-    { question: "Cos'è il fattoriale di 5 (5!)?", answer: "120", difficulty: 3 },
-    { question: "Qual è l'integrale di 2x?", answer: "x² + C", difficulty: 4 },
-    { question: "Cos'è un logaritmo?", answer: "L'esponente a cui elevare la base per ottenere il numero dato", difficulty: 4 },
-    { question: "Quanto vale log₁₀(1000)?", answer: "3", difficulty: 3 },
-    { question: "Qual è il valore di 'e' (numero di Eulero)?", answer: "≈ 2,71828", difficulty: 4 },
-    { question: "Cos'è una matrice?", answer: "Una tabella rettangolare di numeri disposti in righe e colonne", difficulty: 3 },
-    { question: "Qual è la somma degli angoli interni di un triangolo?", answer: "180°", difficulty: 1 },
-    { question: "Cos'è un numero irrazionale?", answer: "Un numero che non può essere espresso come rapporto di due interi", difficulty: 3 },
-    { question: "Qual è il MCD di 12 e 18?", answer: "6", difficulty: 2 },
-    { question: "Cos'è la successione di Fibonacci?", answer: "Una sequenza in cui ogni numero è la somma dei due precedenti (0, 1, 1, 2, 3, 5, 8...)", difficulty: 3 },
-    { question: "Qual è la formula risolutiva dell'equazione di 2° grado?", answer: "x = (-b ± √(b²-4ac)) / 2a", difficulty: 4 },
-    { question: "Cos'è un numero complesso?", answer: "Un numero della forma a + bi, dove i = √(-1)", difficulty: 5 },
-    { question: "Quanto vale sen(90°)?", answer: "1", difficulty: 2 },
-    { question: "Cos'è il determinante di una matrice?", answer: "Un valore scalare calcolato da una matrice quadrata", difficulty: 5 },
-    { question: "Quanti lati ha un dodecaedro?", answer: "12 facce pentagonali", difficulty: 5 },
-    { question: "Qual è il volume di una sfera?", answer: "(4/3)πr³", difficulty: 3 },
-    { question: "Cos'è un vettore?", answer: "Una grandezza con modulo, direzione e verso", difficulty: 3 },
-    { question: "Cos'è la congettura di Goldbach?", answer: "Ogni numero pari maggiore di 2 è somma di due numeri primi", difficulty: 6 },
-    { question: "Qual è il limite di (1 + 1/n)ⁿ per n→∞?", answer: "e (numero di Eulero)", difficulty: 6 },
-    { question: "Cos'è la serie di Taylor?", answer: "Una rappresentazione di una funzione come somma infinita di termini polinomiali", difficulty: 6 },
-    { question: "Chi ha dimostrato l'ultimo teorema di Fermat?", answer: "Andrew Wiles", difficulty: 6 },
-    { question: "Cos'è la trasformata di Fourier?", answer: "Una trasformazione che decompone una funzione nelle sue componenti sinusoidali", difficulty: 7 },
-  ],
-  "Sport": [
-    { question: "Quanti giocatori ci sono in una squadra di calcio?", answer: "11", difficulty: 1 },
-    { question: "In quale sport si usa la racchetta e il volano?", answer: "Badminton", difficulty: 2 },
-    { question: "Quale paese ha vinto più Mondiali di calcio?", answer: "Brasile (5)", difficulty: 1 },
-    { question: "Quanto dura una partita di basket NBA?", answer: "48 minuti (4 quarti da 12)", difficulty: 2 },
-    { question: "Chi detiene il record di gol nella storia del calcio?", answer: "Cristiano Ronaldo (o Josef Bican a seconda della fonte)", difficulty: 3 },
-    { question: "In quale sport si usa il termine 'ace'?", answer: "Tennis", difficulty: 1 },
-    { question: "Dove si sono svolte le Olimpiadi del 2020?", answer: "Tokyo (nel 2021)", difficulty: 2 },
-    { question: "Chi è il velocista più veloce della storia nei 100m?", answer: "Usain Bolt", difficulty: 1 },
-    { question: "Quanti set servono per vincere una partita di tennis maschile al Grand Slam?", answer: "3 (su 5)", difficulty: 2 },
-    { question: "Cos'è il triathlon?", answer: "Una competizione con nuoto, ciclismo e corsa", difficulty: 2 },
-    { question: "Quale club ha vinto più Champions League?", answer: "Real Madrid", difficulty: 2 },
-    { question: "In quale anno l'Italia ha vinto il Mondiale di calcio per l'ultima volta?", answer: "2006", difficulty: 1 },
-    { question: "Cos'è il VAR nel calcio?", answer: "Video Assistant Referee", difficulty: 2 },
-    { question: "Chi ha vinto più Palloni d'Oro?", answer: "Lionel Messi", difficulty: 2 },
-    { question: "Quanti punti vale un touchdown nel football americano?", answer: "6 (+ possibile extra point)", difficulty: 3 },
-    { question: "In quale sport si compete nel Tour de France?", answer: "Ciclismo", difficulty: 1 },
-    { question: "Chi è il tennista con più Grand Slam maschili?", answer: "Novak Djokovic", difficulty: 2 },
-    { question: "Quale squadra NBA ha vinto più titoli?", answer: "Boston Celtics", difficulty: 3 },
-    { question: "Cos'è un 'hat-trick'?", answer: "Tre gol segnati da un giocatore nella stessa partita", difficulty: 2 },
-    { question: "In quale sport si usa il puck?", answer: "Hockey su ghiaccio", difficulty: 1 },
-    { question: "Quale nuotatore ha vinto più ori olimpici?", answer: "Michael Phelps", difficulty: 2 },
-    { question: "Quanto è lungo un campo da calcio regolamentare?", answer: "100-110 metri", difficulty: 3 },
-    { question: "Chi ha inventato il basket?", answer: "James Naismith", difficulty: 4 },
-    { question: "Quale atleta ha vinto 9 ori olimpici nel 2008 e 2012 combinati?", answer: "Usain Bolt", difficulty: 4 },
-    { question: "In quale città si trova lo stadio del Maracanã?", answer: "Rio de Janeiro", difficulty: 3 },
-    { question: "Cos'è il curling?", answer: "Uno sport invernale dove si fanno scivolare pietre su ghiaccio", difficulty: 2 },
-    { question: "Quale pilota ha vinto più mondiali di Formula 1?", answer: "Michael Schumacher e Lewis Hamilton (7 ciascuno)", difficulty: 3 },
-    { question: "In che anno si tennero le prime Olimpiadi moderne?", answer: "1896 ad Atene", difficulty: 4 },
-    { question: "Cosa significa 'fuorigioco' nel calcio?", answer: "Un giocatore è oltre l'ultimo difensore avversario al momento del passaggio", difficulty: 2 },
-    { question: "Quale sport pratica Tiger Woods?", answer: "Golf", difficulty: 1 },
-  ],
-  "Film": [
-    { question: "Chi ha diretto 'Il Padrino'?", answer: "Francis Ford Coppola", difficulty: 1 },
-    { question: "Quale film ha vinto l'Oscar come miglior film nel 1994?", answer: "Forrest Gump", difficulty: 3 },
-    { question: "Chi interpreta Jack in Titanic?", answer: "Leonardo DiCaprio", difficulty: 1 },
-    { question: "In quale film si dice 'Io sono tuo padre'?", answer: "Star Wars: L'Impero colpisce ancora", difficulty: 1 },
-    { question: "Chi ha diretto 'Pulp Fiction'?", answer: "Quentin Tarantino", difficulty: 1 },
-    { question: "Quale studio di animazione ha prodotto 'Toy Story'?", answer: "Pixar", difficulty: 1 },
-    { question: "Chi interpreta il Joker nel film del 2019?", answer: "Joaquin Phoenix", difficulty: 2 },
-    { question: "Quale film italiano ha vinto l'Oscar nel 1999?", answer: "La vita è bella (Roberto Benigni)", difficulty: 2 },
-    { question: "Chi ha diretto 'Inception'?", answer: "Christopher Nolan", difficulty: 2 },
-    { question: "Quale film detiene il record di incassi mondiali?", answer: "Avatar (2009)", difficulty: 2 },
-    { question: "Chi interpreta Vito Corleone ne Il Padrino?", answer: "Marlon Brando", difficulty: 2 },
-    { question: "In quale anno è uscito il primo film di Harry Potter?", answer: "2001", difficulty: 2 },
-    { question: "Chi ha diretto 'Schindler's List'?", answer: "Steven Spielberg", difficulty: 2 },
-    { question: "Quale attore è protagonista di 'Matrix'?", answer: "Keanu Reeves", difficulty: 1 },
-    { question: "Quale regista è noto per 'Psyco' e 'Gli uccelli'?", answer: "Alfred Hitchcock", difficulty: 2 },
-    { question: "Chi ha diretto '2001: Odissea nello spazio'?", answer: "Stanley Kubrick", difficulty: 3 },
-    { question: "Quale film contiene la frase 'Francamente me ne infischio'?", answer: "Via col vento", difficulty: 3 },
-    { question: "Chi ha diretto la trilogia del Signore degli Anelli?", answer: "Peter Jackson", difficulty: 2 },
-    { question: "Quale attore ha interpretato sia Wolverine che Van Helsing?", answer: "Hugh Jackman", difficulty: 3 },
-    { question: "In quale film animato Dory dice 'Continua a nuotare'?", answer: "Alla ricerca di Nemo", difficulty: 1 },
-    { question: "Chi ha scritto la colonna sonora di 'Star Wars'?", answer: "John Williams", difficulty: 3 },
-    { question: "Quale regista italiano ha diretto 'La dolce vita'?", answer: "Federico Fellini", difficulty: 3 },
-    { question: "In quale anno è uscito 'Il Gladiatore'?", answer: "2000", difficulty: 3 },
-    { question: "Chi interpreta Hannibal Lecter ne 'Il silenzio degli innocenti'?", answer: "Anthony Hopkins", difficulty: 2 },
-    { question: "Quale film ha per protagonista un robot chiamato WALL-E?", answer: "WALL-E (Pixar)", difficulty: 1 },
-    { question: "Chi è il regista di 'Parasite' (2019)?", answer: "Bong Joon-ho", difficulty: 4 },
-    { question: "Quale film noir è considerato il capolavoro di Orson Welles?", answer: "Quarto potere (Citizen Kane)", difficulty: 4 },
-    { question: "In quale saga cinematografica appare il DeLorean?", answer: "Ritorno al futuro", difficulty: 1 },
-    { question: "Chi ha diretto 'Interstellar'?", answer: "Christopher Nolan", difficulty: 2 },
-    { question: "Quale attore ha interpretato sia Edward mani di forbice che Jack Sparrow?", answer: "Johnny Depp", difficulty: 2 },
-  ],
-  "Serie TV": [
-    { question: "In quale serie TV si dice 'Winter is coming'?", answer: "Game of Thrones", difficulty: 1 },
-    { question: "Come si chiama il protagonista di Breaking Bad?", answer: "Walter White", difficulty: 1 },
-    { question: "Quale serie è ambientata a Hawkins, Indiana?", answer: "Stranger Things", difficulty: 1 },
-    { question: "Chi interpreta Sheldon Cooper in The Big Bang Theory?", answer: "Jim Parsons", difficulty: 1 },
-    { question: "In quale serie TV un professore organizza rapine con maschere di Dalí?", answer: "La Casa di Carta", difficulty: 1 },
-    { question: "Come si chiama il bar di 'How I Met Your Mother'?", answer: "MacLaren's Pub", difficulty: 3 },
-    { question: "Quante stagioni ha Friends?", answer: "10", difficulty: 2 },
-    { question: "Quale serie Netflix racconta di un gioco di sopravvivenza coreano?", answer: "Squid Game", difficulty: 1 },
-    { question: "Chi è il creatore di 'Black Mirror'?", answer: "Charlie Brooker", difficulty: 3 },
-    { question: "In quale serie il protagonista è un chimico che diventa narcotrafficante?", answer: "Breaking Bad", difficulty: 1 },
-    { question: "Quale serie TV italiana è ambientata a Gomorra?", answer: "Gomorra - La serie", difficulty: 2 },
-    { question: "Come si chiama il protagonista di 'The Mandalorian'?", answer: "Din Djarin (Mando)", difficulty: 3 },
-    { question: "Quale serie racconta le vicende della famiglia Roy?", answer: "Succession", difficulty: 3 },
-    { question: "In quale serie appare il personaggio di Eleven?", answer: "Stranger Things", difficulty: 1 },
-    { question: "Chi interpreta Jon Snow in Game of Thrones?", answer: "Kit Harington", difficulty: 2 },
-    { question: "Quale serie è basata sui romanzi di Andrzej Sapkowski?", answer: "The Witcher", difficulty: 3 },
-    { question: "In quale serie TV americana i personaggi vivono a Wisteria Lane?", answer: "Desperate Housewives", difficulty: 3 },
-    { question: "Chi è il protagonista di Dexter?", answer: "Dexter Morgan", difficulty: 2 },
-    { question: "Quale serie racconta la storia di una scacchista prodigio?", answer: "La regina degli scacchi", difficulty: 2 },
-    { question: "Come si chiama la prigione di 'Orange Is the New Black'?", answer: "Litchfield", difficulty: 4 },
-    { question: "Quale serie TV è un prequel di Breaking Bad?", answer: "Better Call Saul", difficulty: 2 },
-    { question: "In quale anno è uscita la prima puntata di 'Lost'?", answer: "2004", difficulty: 4 },
-    { question: "Chi interpreta il Doctor House?", answer: "Hugh Laurie", difficulty: 2 },
-    { question: "Quale serie distopica è basata su un romanzo di Margaret Atwood?", answer: "The Handmaid's Tale", difficulty: 4 },
-    { question: "Come si chiama il personaggio interpretato da Bryan Cranston in Breaking Bad?", answer: "Walter White / Heisenberg", difficulty: 2 },
-    { question: "Quale serie racconta le avventure della famiglia Bluth?", answer: "Arrested Development", difficulty: 5 },
-    { question: "In quale serie TV i protagonisti sono intrappolati in un'isola?", answer: "Lost", difficulty: 1 },
-    { question: "Chi ha creato 'The Office' (versione USA)?", answer: "Greg Daniels (adattamento da Ricky Gervais)", difficulty: 4 },
-    { question: "Quale serie animata ha per protagonista una famiglia gialla?", answer: "I Simpson", difficulty: 1 },
-    { question: "In quale serie compare il personaggio Tyrion Lannister?", answer: "Game of Thrones", difficulty: 2 },
-  ],
-  "Musica": [
-    { question: "Chi ha cantato 'Bohemian Rhapsody'?", answer: "Queen (Freddie Mercury)", difficulty: 1 },
-    { question: "Quale strumento suona un pianista?", answer: "Pianoforte", difficulty: 1 },
-    { question: "Quale band ha pubblicato 'Abbey Road'?", answer: "The Beatles", difficulty: 1 },
-    { question: "Chi è il 'Re del Pop'?", answer: "Michael Jackson", difficulty: 1 },
-    { question: "Quale cantante italiana è nota per 'La solitudine'?", answer: "Laura Pausini", difficulty: 2 },
-    { question: "Quante corde ha una chitarra classica?", answer: "Sei", difficulty: 1 },
-    { question: "Chi ha composto 'Le quattro stagioni'?", answer: "Antonio Vivaldi", difficulty: 2 },
-    { question: "Quale genere musicale è nato a New Orleans?", answer: "Jazz", difficulty: 2 },
-    { question: "Chi ha scritto la 'Nona Sinfonia'?", answer: "Ludwig van Beethoven", difficulty: 2 },
-    { question: "Qual è il festival musicale più famoso d'Italia?", answer: "Festival di Sanremo", difficulty: 1 },
-    { question: "Chi ha cantato 'Imagine'?", answer: "John Lennon", difficulty: 1 },
-    { question: "Quale cantante è nota come 'Queen B'?", answer: "Beyoncé", difficulty: 1 },
-    { question: "Cos'è un crescendo in musica?", answer: "Un aumento graduale del volume", difficulty: 3 },
-    { question: "Chi è il cantante dei Måneskin?", answer: "Damiano David", difficulty: 1 },
-    { question: "Quale compositore divenne sordo ma continuò a comporre?", answer: "Beethoven", difficulty: 2 },
-    { question: "Cos'è il tempo 4/4 in musica?", answer: "Il tempo più comune con 4 battiti per misura", difficulty: 3 },
-    { question: "Chi ha cantato 'Volare' (Nel blu dipinto di blu)?", answer: "Domenico Modugno", difficulty: 2 },
-    { question: "Quale strumento a fiato è il più grande dell'orchestra?", answer: "Tuba", difficulty: 4 },
-    { question: "Chi ha composto 'Il barbiere di Siviglia'?", answer: "Gioachino Rossini", difficulty: 3 },
-    { question: "Quale rapper italiano ha pubblicato 'Persona'?", answer: "Marracash", difficulty: 3 },
-    { question: "Cos'è un'ottava in musica?", answer: "L'intervallo tra una nota e la stessa nota più acuta o grave", difficulty: 3 },
-    { question: "Chi ha composto la colonna sonora de 'Il buono, il brutto, il cattivo'?", answer: "Ennio Morricone", difficulty: 2 },
-    { question: "Quale cantautore italiano ha scritto 'La canzone di Marinella'?", answer: "Fabrizio De André", difficulty: 3 },
-    { question: "Cos'è il basso continuo?", answer: "Una tecnica di accompagnamento della musica barocca", difficulty: 6 },
-    { question: "Quale band ha pubblicato 'The Dark Side of the Moon'?", answer: "Pink Floyd", difficulty: 2 },
-    { question: "Chi ha composto 'La Traviata'?", answer: "Giuseppe Verdi", difficulty: 2 },
-    { question: "Cos'è la scala pentatonica?", answer: "Una scala musicale di cinque note", difficulty: 5 },
-    { question: "Quale cantante ha vinto Sanremo 2023?", answer: "Marco Mengoni con 'Due vite'", difficulty: 3 },
-    { question: "Chi è il compositore de 'Lo schiaccianoci'?", answer: "Čajkovskij", difficulty: 3 },
-    { question: "Quale genere musicale nasce dal Bronx negli anni '70?", answer: "Hip-hop", difficulty: 3 },
-  ],
-  "Tecnologia": [
-    { question: "Chi ha fondato Apple?", answer: "Steve Jobs, Steve Wozniak e Ronald Wayne", difficulty: 1 },
-    { question: "Cos'è l'HTML?", answer: "HyperText Markup Language, il linguaggio per creare pagine web", difficulty: 2 },
-    { question: "Quale azienda ha creato il sistema operativo Android?", answer: "Google (originariamente Android Inc.)", difficulty: 2 },
-    { question: "Cos'è un algoritmo?", answer: "Una sequenza finita di istruzioni per risolvere un problema", difficulty: 2 },
-    { question: "In che anno è stato lanciato il primo iPhone?", answer: "2007", difficulty: 2 },
-    { question: "Cos'è il cloud computing?", answer: "L'uso di risorse informatiche distribuite via internet", difficulty: 2 },
-    { question: "Chi ha fondato Microsoft?", answer: "Bill Gates e Paul Allen", difficulty: 1 },
-    { question: "Cos'è un firewall?", answer: "Un sistema di sicurezza che controlla il traffico di rete", difficulty: 3 },
-    { question: "Cosa significa 'AI'?", answer: "Artificial Intelligence (Intelligenza Artificiale)", difficulty: 1 },
-    { question: "Quale linguaggio di programmazione è rappresentato da un serpente?", answer: "Python", difficulty: 2 },
-    { question: "Cos'è la blockchain?", answer: "Un registro digitale distribuito e immutabile", difficulty: 3 },
-    { question: "Chi ha inventato il World Wide Web?", answer: "Tim Berners-Lee", difficulty: 2 },
-    { question: "Cos'è un cookie nel contesto web?", answer: "Un piccolo file di dati memorizzato dal browser", difficulty: 2 },
-    { question: "Quale azienda produce i processori Ryzen?", answer: "AMD", difficulty: 3 },
-    { question: "Cos'è Git?", answer: "Un sistema di controllo versione distribuito", difficulty: 3 },
-    { question: "Cosa significa IoT?", answer: "Internet of Things (Internet delle cose)", difficulty: 3 },
-    { question: "Cos'è un indirizzo IP?", answer: "Un identificatore numerico univoco per un dispositivo in rete", difficulty: 2 },
-    { question: "Chi ha fondato Tesla?", answer: "Elon Musk, Martin Eberhard, Marc Tarpenning, JB Straubel, Ian Wright", difficulty: 4 },
-    { question: "Cos'è la crittografia end-to-end?", answer: "Un sistema in cui solo mittente e destinatario possono leggere i messaggi", difficulty: 4 },
-    { question: "Quale azienda ha creato ChatGPT?", answer: "OpenAI", difficulty: 1 },
-    { question: "Cos'è il machine learning?", answer: "Un ramo dell'AI in cui i sistemi imparano dai dati", difficulty: 3 },
-    { question: "Cosa significa CPU?", answer: "Central Processing Unit", difficulty: 2 },
-    { question: "Cos'è un'API?", answer: "Application Programming Interface, un'interfaccia per far comunicare software diversi", difficulty: 3 },
-    { question: "Quale protocollo è usato per la navigazione web sicura?", answer: "HTTPS", difficulty: 2 },
-    { question: "Cos'è la realtà virtuale (VR)?", answer: "Una simulazione generata al computer di un ambiente tridimensionale", difficulty: 2 },
-    { question: "Chi ha fondato Amazon?", answer: "Jeff Bezos", difficulty: 1 },
-    { question: "Cos'è il phishing?", answer: "Una truffa che inganna le vittime per ottenere dati sensibili", difficulty: 3 },
-    { question: "Cos'è la legge di Moore?", answer: "Il numero di transistor nei chip raddoppia circa ogni 2 anni", difficulty: 5 },
-    { question: "Cosa sono i container in informatica?", answer: "Ambienti isolati per eseguire applicazioni (es. Docker)", difficulty: 5 },
-    { question: "Cos'è il quantum computing?", answer: "Un tipo di calcolo basato sui qubit e la meccanica quantistica", difficulty: 5 },
-  ],
-  "Cultura pop": [
-    { question: "Chi è il protagonista di 'Harry Potter'?", answer: "Harry Potter", difficulty: 1 },
-    { question: "Quale supereroe è anche noto come 'L'Uomo Pipistrello'?", answer: "Batman", difficulty: 1 },
-    { question: "Come si chiama il social network fondato da Mark Zuckerberg?", answer: "Facebook (ora Meta)", difficulty: 1 },
-    { question: "Quale cantante è nota come 'Material Girl'?", answer: "Madonna", difficulty: 1 },
-    { question: "Chi interpreta Hermione Granger nei film di Harry Potter?", answer: "Emma Watson", difficulty: 1 },
-    { question: "Quale gioco da tavolo ha le proprietà di Parco della Vittoria?", answer: "Monopoly", difficulty: 2 },
-    { question: "Chi è il creatore dei Simpson?", answer: "Matt Groening", difficulty: 2 },
-    { question: "Come si chiama l'universo fantastico di Tolkien?", answer: "Terra di Mezzo (Arda)", difficulty: 2 },
-    { question: "Quale personaggio dei fumetti è stato creato da Stan Lee e Jack Kirby nel 1962?", answer: "Hulk (o Thor, Spider-Man, ecc.)", difficulty: 3 },
-    { question: "Chi ha creato 'Star Wars'?", answer: "George Lucas", difficulty: 1 },
-    { question: "Quale app di video brevi è stata creata da ByteDance?", answer: "TikTok", difficulty: 1 },
-    { question: "Come si chiama il mago oscuro nella saga di Harry Potter?", answer: "Lord Voldemort", difficulty: 1 },
-    { question: "Quale artista ha dipinto la Gioconda?", answer: "Leonardo da Vinci", difficulty: 1 },
-    { question: "Chi ha creato Mickey Mouse?", answer: "Walt Disney (e Ub Iwerks)", difficulty: 2 },
-    { question: "Quale influencer italiano è noto per i video di cucina su YouTube?", answer: "Vari (es. Benedetta Rossi, Chef in Camicia)", difficulty: 3 },
-    { question: "Come si chiama la saga cinematografica con Vin Diesel e auto veloci?", answer: "Fast and Furious", difficulty: 1 },
-    { question: "Chi è l'autore dei libri di Game of Thrones?", answer: "George R.R. Martin", difficulty: 2 },
-    { question: "Quale Pokemon è il più iconico?", answer: "Pikachu", difficulty: 1 },
-    { question: "Quale gioco di carte collezionabili è basato sui Pokemon?", answer: "Pokemon Trading Card Game", difficulty: 2 },
-    { question: "Chi è il protagonista di 'One Piece'?", answer: "Monkey D. Luffy", difficulty: 2 },
-    { question: "Quale artista ha l'album 'Thriller'?", answer: "Michael Jackson", difficulty: 1 },
-    { question: "Come si chiama la principessa Disney che perde la scarpetta?", answer: "Cenerentola", difficulty: 1 },
-    { question: "Chi interpreta Jack Sparrow?", answer: "Johnny Depp", difficulty: 1 },
-    { question: "Quale manga giapponese ha per protagonista un ninja biondo?", answer: "Naruto", difficulty: 2 },
-    { question: "Chi ha scritto la saga 'Hunger Games'?", answer: "Suzanne Collins", difficulty: 3 },
-    { question: "Quale personaggio dice 'Hasta la vista, baby'?", answer: "Terminator (T-800)", difficulty: 2 },
-    { question: "Cos'è il Cosplay?", answer: "Vestirsi come personaggi di film, anime, videogiochi, ecc.", difficulty: 2 },
-    { question: "Quale serie anime ha i Saiyan?", answer: "Dragon Ball", difficulty: 1 },
-    { question: "Chi è il creatore di Marvel Comics?", answer: "Martin Goodman (fondatore); Stan Lee (figura iconica)", difficulty: 4 },
-    { question: "Quale meme è noto come 'distracted boyfriend'?", answer: "Stock photo di un uomo che guarda un'altra donna", difficulty: 3 },
-  ],
-  "Arte": [
-    { question: "Chi ha dipinto la Cappella Sistina?", answer: "Michelangelo", difficulty: 1 },
-    { question: "In quale museo si trova la Gioconda?", answer: "Louvre, Parigi", difficulty: 1 },
-    { question: "Chi ha dipinto 'La notte stellata'?", answer: "Vincent van Gogh", difficulty: 1 },
-    { question: "Cosa rappresenta 'La nascita di Venere' di Botticelli?", answer: "La dea Venere che emerge dal mare", difficulty: 2 },
-    { question: "Chi ha scolpito il David di Firenze?", answer: "Michelangelo", difficulty: 1 },
-    { question: "Quale movimento artistico è associato a Dalí?", answer: "Surrealismo", difficulty: 2 },
-    { question: "Chi ha dipinto 'La persistenza della memoria' (orologi molli)?", answer: "Salvador Dalí", difficulty: 2 },
-    { question: "Quale artista è noto per i tagli sulle tele?", answer: "Lucio Fontana", difficulty: 3 },
-    { question: "Cos'è il Rinascimento?", answer: "Un periodo di rinascita culturale e artistica in Europa (XIV-XVI sec.)", difficulty: 2 },
-    { question: "Chi ha progettato la cupola del Duomo di Firenze?", answer: "Filippo Brunelleschi", difficulty: 3 },
-    { question: "Quale artista è noto per le lattine di zuppa Campbell?", answer: "Andy Warhol", difficulty: 2 },
-    { question: "Chi ha dipinto 'L'urlo'?", answer: "Edvard Munch", difficulty: 2 },
-    { question: "Cos'è il Cubismo?", answer: "Un movimento artistico che rappresenta gli oggetti da molteplici punti di vista", difficulty: 3 },
-    { question: "Chi è considerato il fondatore del Cubismo?", answer: "Pablo Picasso (con Georges Braque)", difficulty: 3 },
-    { question: "Quale opera d'arte è una fontana-orinatoio firmata 'R. Mutt'?", answer: "Fontana di Marcel Duchamp", difficulty: 4 },
-    { question: "Chi ha dipinto 'Guernica'?", answer: "Pablo Picasso", difficulty: 2 },
-    { question: "Cos'è l'Impressionismo?", answer: "Un movimento pittorico che cattura la luce e le impressioni fugaci", difficulty: 2 },
-    { question: "Chi è il pittore delle 'Ninfee'?", answer: "Claude Monet", difficulty: 2 },
-    { question: "Quale artista italiano è noto per le sue piazze metafisiche?", answer: "Giorgio de Chirico", difficulty: 4 },
-    { question: "Cos'è il Barocco?", answer: "Uno stile artistico del XVII secolo, ricco e drammatico", difficulty: 3 },
-    { question: "Chi ha dipinto 'La ragazza con l'orecchino di perla'?", answer: "Jan Vermeer", difficulty: 3 },
-    { question: "Quale artista di street art è rimasto anonimo?", answer: "Banksy", difficulty: 1 },
-    { question: "Cos'è il chiaroscuro?", answer: "Una tecnica di contrasto tra luce e ombra", difficulty: 3 },
-    { question: "Chi ha realizzato le sculture 'I borghesi di Calais'?", answer: "Auguste Rodin", difficulty: 5 },
-    { question: "Quale artista ha creato le 'Demoiselles d'Avignon'?", answer: "Pablo Picasso", difficulty: 4 },
-    { question: "Cos'è il Ready-made nell'arte?", answer: "Un oggetto comune elevato ad opera d'arte (concetto di Duchamp)", difficulty: 5 },
-    { question: "Chi ha dipinto 'Il bacio'?", answer: "Gustav Klimt", difficulty: 2 },
-    { question: "Quale artista è associato al dripping?", answer: "Jackson Pollock", difficulty: 4 },
-    { question: "Cos'è l'Arte Povera?", answer: "Un movimento italiano che usa materiali non convenzionali", difficulty: 5 },
-    { question: "Chi ha dipinto 'La libertà che guida il popolo'?", answer: "Eugène Delacroix", difficulty: 4 },
-  ],
-  "Cibo": [
-    { question: "Da quale paese proviene il sushi?", answer: "Giappone", difficulty: 1 },
-    { question: "Qual è l'ingrediente principale della guacamole?", answer: "Avocado", difficulty: 1 },
-    { question: "Quale formaggio è usato nella pizza Margherita?", answer: "Mozzarella", difficulty: 1 },
-    { question: "Da quale frutto si ricava il vino?", answer: "Uva", difficulty: 1 },
-    { question: "Qual è il piatto tipico napoletano a base di pasta?", answer: "Spaghetti alle vongole (o ragù napoletano)", difficulty: 2 },
-    { question: "Cosa sono gli gnocchi?", answer: "Un piatto a base di patate e farina, tipico italiano", difficulty: 1 },
-    { question: "Da quale paese proviene il kebab?", answer: "Turchia (Medio Oriente)", difficulty: 2 },
-    { question: "Cos'è il pesto alla genovese?", answer: "Una salsa a base di basilico, pinoli, aglio, parmigiano e olio", difficulty: 2 },
-    { question: "Quale spezia dà il colore giallo al curry?", answer: "Curcuma", difficulty: 3 },
-    { question: "Qual è il piatto tradizionale giapponese a base di riso e pesce crudo?", answer: "Sushi/Sashimi", difficulty: 1 },
-    { question: "Da quale regione italiana proviene il tiramisù?", answer: "Veneto (Treviso)", difficulty: 3 },
-    { question: "Cos'è la carbonara autentica?", answer: "Pasta con guanciale, uova, pecorino romano e pepe nero", difficulty: 2 },
-    { question: "Quale frutto è il più consumato al mondo?", answer: "Banana", difficulty: 2 },
-    { question: "Cos'è il tofu?", answer: "Un alimento a base di soia cagliata", difficulty: 2 },
-    { question: "Da quale animale si ottiene il prosciutto di Parma?", answer: "Maiale", difficulty: 1 },
-    { question: "Cos'è la fermentazione?", answer: "Un processo in cui i microrganismi trasformano zuccheri in alcol o acidi", difficulty: 3 },
-    { question: "Quale chef italiano è noto per 'MasterChef Italia'?", answer: "Carlo Cracco / Bruno Barbieri / Antonino Cannavacciuolo", difficulty: 2 },
-    { question: "Da quale fava si ricava il cioccolato?", answer: "Cacao", difficulty: 1 },
-    { question: "Cos'è il kimchi?", answer: "Verdure fermentate coreane (cavolo)", difficulty: 3 },
-    { question: "Quale pasta ha la forma di orecchie?", answer: "Orecchiette", difficulty: 2 },
-    { question: "Qual è il cereale più coltivato al mondo?", answer: "Mais (o riso/grano secondo la metrica)", difficulty: 3 },
-    { question: "Cos'è la cucina molecolare?", answer: "Un approccio alla cucina che usa tecniche scientifiche", difficulty: 4 },
-    { question: "Da quale regione proviene la focaccia?", answer: "Liguria", difficulty: 2 },
-    { question: "Quale vino rosso è tipico della Toscana?", answer: "Chianti", difficulty: 2 },
-    { question: "Cos'è il miso?", answer: "Una pasta fermentata giapponese a base di soia", difficulty: 3 },
-    { question: "Quale formaggio francese è noto per il suo odore forte?", answer: "Camembert (o Roquefort)", difficulty: 3 },
-    { question: "Cos'è la reazione di Maillard?", answer: "La reazione chimica che causa la doratura degli alimenti", difficulty: 5 },
-    { question: "Quale tipo di pasta è ripiena e tipica dell'Emilia?", answer: "Tortellini", difficulty: 2 },
-    { question: "Cos'è il tempeh?", answer: "Un alimento fermentato a base di soia (origine indonesiana)", difficulty: 4 },
-    { question: "Quale piatto indiano è una piadina ripiena?", answer: "Samosa (o Naan ripieno)", difficulty: 3 },
-  ],
-  "Videogiochi": [
-    { question: "Quale personaggio è l'idraulico più famoso dei videogiochi?", answer: "Mario (Super Mario)", difficulty: 1 },
-    { question: "In quale gioco si costruiscono strutture con blocchi?", answer: "Minecraft", difficulty: 1 },
-    { question: "Quale gioco battle royale è sviluppato da Epic Games?", answer: "Fortnite", difficulty: 1 },
-    { question: "Chi è il protagonista di 'The Legend of Zelda'?", answer: "Link", difficulty: 2 },
-    { question: "Quale console ha prodotto la Nintendo nel 2017?", answer: "Nintendo Switch", difficulty: 1 },
-    { question: "In quale gioco si catturano creature chiamate Pokémon?", answer: "Pokémon", difficulty: 1 },
-    { question: "Chi è il protagonista di God of War (2018)?", answer: "Kratos", difficulty: 2 },
-    { question: "Quale gioco di ruolo è ambientato a Skyrim?", answer: "The Elder Scrolls V: Skyrim", difficulty: 2 },
-    { question: "Quale gioco ha reso famosa la frase 'The cake is a lie'?", answer: "Portal", difficulty: 3 },
-    { question: "In quale anno è uscito il primo gioco di Super Mario?", answer: "1985", difficulty: 3 },
-    { question: "Quale studio ha sviluppato 'The Last of Us'?", answer: "Naughty Dog", difficulty: 2 },
-    { question: "Cos'è un NPC?", answer: "Non-Player Character (personaggio non giocante)", difficulty: 2 },
-    { question: "Quale gioco di carte digitale è basato su Warcraft?", answer: "Hearthstone", difficulty: 3 },
-    { question: "Chi è il protagonista della saga 'Uncharted'?", answer: "Nathan Drake", difficulty: 2 },
-    { question: "Quale gioco sparatutto ha le modalità Zombies e Warzone?", answer: "Call of Duty", difficulty: 1 },
-    { question: "In quale gioco si dice 'Fus Ro Dah'?", answer: "Skyrim", difficulty: 2 },
-    { question: "Chi è lo sviluppatore di Elden Ring?", answer: "FromSoftware (con George R.R. Martin per la lore)", difficulty: 3 },
-    { question: "Quale gioco ha il mondo aperto più grande tra GTA?", answer: "GTA V (Los Santos)", difficulty: 3 },
-    { question: "Cos'è un 'speedrun'?", answer: "Completare un gioco il più velocemente possibile", difficulty: 2 },
-    { question: "Quale gioco horror ha per protagonista Ethan Winters?", answer: "Resident Evil Village (e RE7)", difficulty: 3 },
-    { question: "Chi ha creato la saga Metal Gear Solid?", answer: "Hideo Kojima", difficulty: 3 },
-    { question: "Quale MMORPG è ambientato ad Azeroth?", answer: "World of Warcraft", difficulty: 2 },
-    { question: "Quale gioco puzzle ha i Tetromini?", answer: "Tetris", difficulty: 1 },
-    { question: "In quale gioco si esplora l'Hyrule?", answer: "The Legend of Zelda", difficulty: 2 },
-    { question: "Quale gioco ha le fazioni 'Impostor' e 'Crewmate'?", answer: "Among Us", difficulty: 1 },
-    { question: "Chi è il protagonista di Cyberpunk 2077?", answer: "V", difficulty: 3 },
-    { question: "Quale console Sony è uscita nel 2020?", answer: "PlayStation 5", difficulty: 1 },
-    { question: "Cos'è il 'roguelike'?", answer: "Un genere con livelli generati casualmente e morte permanente", difficulty: 4 },
-    { question: "Chi ha sviluppato 'Hollow Knight'?", answer: "Team Cherry", difficulty: 4 },
-    { question: "Quale gioco indie ha un fiore che cresce da un sotterraneo?", answer: "Undertale (Flowey)", difficulty: 4 },
-  ],
-  "Natura": [
-    { question: "Quale animale è il più grande del mondo?", answer: "Balenottera azzurra", difficulty: 1 },
-    { question: "Quante zampe ha un ragno?", answer: "Otto", difficulty: 1 },
-    { question: "Cos'è la fotosintesi?", answer: "Il processo con cui le piante producono energia dalla luce solare", difficulty: 1 },
-    { question: "Quale animale è noto per cambiare colore?", answer: "Camaleonte", difficulty: 1 },
-    { question: "Qual è l'animale terrestre più veloce?", answer: "Ghepardo", difficulty: 1 },
-    { question: "Quanti cuori ha un polpo?", answer: "Tre", difficulty: 2 },
-    { question: "Quale albero produce le ghiande?", answer: "Quercia", difficulty: 1 },
-    { question: "Cos'è un ecosistema?", answer: "L'insieme degli organismi viventi e l'ambiente in cui interagiscono", difficulty: 2 },
-    { question: "Quale gas producono le piante durante la fotosintesi?", answer: "Ossigeno", difficulty: 1 },
-    { question: "Quale animale può rigenerare i propri arti?", answer: "Salamandra (o stella marina)", difficulty: 3 },
-    { question: "Cos'è la biodiversità?", answer: "La varietà di specie viventi in un ecosistema", difficulty: 2 },
-    { question: "Quale insetto è il più grande impollinatore?", answer: "L'ape", difficulty: 1 },
-    { question: "Quale animale ha l'impronta digitale simile a quella umana?", answer: "Koala", difficulty: 4 },
-    { question: "Cos'è la simbiosi?", answer: "Una relazione stretta tra due organismi di specie diverse", difficulty: 3 },
-    { question: "Quale fiore è il simbolo del Giappone?", answer: "Il fiore di ciliegio (Sakura)", difficulty: 2 },
-    { question: "Quanto può vivere una tartaruga gigante?", answer: "Oltre 100 anni (fino a 200)", difficulty: 3 },
-    { question: "Cos'è la migrazione?", answer: "Lo spostamento stagionale degli animali tra regioni", difficulty: 2 },
-    { question: "Quale animale è il parente più vicino dell'uomo?", answer: "Scimpanzé (o bonobo)", difficulty: 2 },
-    { question: "Cos'è un bioma?", answer: "Una grande comunità ecologica caratterizzata da clima e vegetazione", difficulty: 4 },
-    { question: "Quale pesce può generare scariche elettriche?", answer: "Anguilla elettrica", difficulty: 2 },
-    { question: "Cos'è l'effetto serra?", answer: "Il riscaldamento dell'atmosfera causato dai gas serra", difficulty: 2 },
-    { question: "Quale animale è considerato il più intelligente dopo l'uomo?", answer: "Delfino (o scimpanzé)", difficulty: 3 },
-    { question: "Cos'è la catena alimentare?", answer: "La sequenza di trasferimento di energia da un organismo all'altro", difficulty: 2 },
-    { question: "Quale pianta carnivora è la più famosa?", answer: "Dionaea muscipula (Venere acchiappamosche)", difficulty: 3 },
-    { question: "Cos'è la selezione naturale?", answer: "Il meccanismo evolutivo descritto da Darwin", difficulty: 3 },
-    { question: "Quale mammifero può volare?", answer: "Il pipistrello", difficulty: 1 },
-    { question: "Cos'è il corallo?", answer: "Un organismo marino coloniale (animale, non pianta)", difficulty: 3 },
-    { question: "Quale fungo è il più velenoso in Europa?", answer: "Amanita phalloides", difficulty: 5 },
-    { question: "Cos'è l'impollinazione?", answer: "Il trasferimento del polline dall'antera allo stigma", difficulty: 3 },
-    { question: "Quale animale produce la seta?", answer: "Il baco da seta (Bombyx mori)", difficulty: 2 },
-  ],
-  "Economia": [
-    { question: "Cos'è il PIL?", answer: "Prodotto Interno Lordo, il valore totale di beni e servizi prodotti in un paese", difficulty: 1 },
-    { question: "Cos'è l'inflazione?", answer: "L'aumento generale dei prezzi nel tempo", difficulty: 1 },
-    { question: "Quale valuta usa il Giappone?", answer: "Yen", difficulty: 2 },
-    { question: "Cos'è una recessione?", answer: "Un calo dell'attività economica per almeno due trimestri consecutivi", difficulty: 2 },
-    { question: "Chi è considerato il padre dell'economia moderna?", answer: "Adam Smith", difficulty: 2 },
-    { question: "Cos'è la borsa valori?", answer: "Un mercato dove si comprano e vendono titoli finanziari", difficulty: 1 },
-    { question: "Quale banca centrale gestisce l'euro?", answer: "BCE (Banca Centrale Europea)", difficulty: 2 },
-    { question: "Cos'è il tasso d'interesse?", answer: "Il costo del denaro preso in prestito", difficulty: 2 },
-    { question: "Cos'è un monopolio?", answer: "Una situazione di mercato con un solo venditore", difficulty: 2 },
-    { question: "Quale azienda è la più capitalizzata al mondo (2024)?", answer: "Apple (o Microsoft)", difficulty: 2 },
-    { question: "Cos'è la domanda e l'offerta?", answer: "Il meccanismo fondamentale che determina i prezzi di mercato", difficulty: 1 },
-    { question: "Cos'è un'obbligazione?", answer: "Un titolo di debito emesso da un'entità per raccogliere capitali", difficulty: 3 },
-    { question: "Quale valuta è usata nel Regno Unito?", answer: "Sterlina britannica (GBP)", difficulty: 1 },
-    { question: "Cos'è il deficit di bilancio?", answer: "Quando le spese superano le entrate", difficulty: 2 },
-    { question: "Chi ha scritto 'La ricchezza delle nazioni'?", answer: "Adam Smith", difficulty: 3 },
-    { question: "Cos'è la stagflazione?", answer: "Una combinazione di stagnazione economica e inflazione", difficulty: 5 },
-    { question: "Quale paese ha l'economia più grande del mondo per PIL?", answer: "Stati Uniti", difficulty: 1 },
-    { question: "Cos'è un hedge fund?", answer: "Un fondo d'investimento speculativo per investitori qualificati", difficulty: 4 },
-    { question: "Cos'è il debito pubblico?", answer: "Il totale dei prestiti contratti dallo Stato", difficulty: 2 },
-    { question: "Quale indice misura la borsa italiana?", answer: "FTSE MIB", difficulty: 3 },
-    { question: "Cos'è la deflazione?", answer: "La diminuzione generale dei prezzi", difficulty: 3 },
-    { question: "Cos'è il Quantitative Easing?", answer: "Una politica monetaria in cui la banca centrale acquista titoli per stimolare l'economia", difficulty: 5 },
-    { question: "Cos'è un ETF?", answer: "Exchange-Traded Fund, un fondo negoziato in borsa", difficulty: 4 },
-    { question: "Quale organizzazione regola il commercio mondiale?", answer: "WTO (World Trade Organization)", difficulty: 3 },
-    { question: "Cos'è la microeconomia?", answer: "Lo studio del comportamento economico di individui e imprese", difficulty: 3 },
-    { question: "Cos'è il Bitcoin?", answer: "Una criptovaluta decentralizzata", difficulty: 1 },
-    { question: "Quale economista ha teorizzato l'intervento statale nell'economia?", answer: "John Maynard Keynes", difficulty: 4 },
-    { question: "Cos'è il PIL pro capite?", answer: "Il PIL diviso per il numero di abitanti", difficulty: 2 },
-    { question: "Cos'è un bear market?", answer: "Un mercato in calo prolungato (oltre il 20%)", difficulty: 4 },
-    { question: "Cosa significa IPO?", answer: "Initial Public Offering, la prima offerta pubblica di azioni", difficulty: 4 },
-  ],
-  "Attualità": [
-    { question: "Quale pandemia ha colpito il mondo nel 2020?", answer: "COVID-19", difficulty: 1 },
-    { question: "Quale paese ha invaso l'Ucraina nel 2022?", answer: "Russia", difficulty: 1 },
-    { question: "Chi è il presidente degli Stati Uniti nel 2025?", answer: "Donald Trump", difficulty: 1 },
-    { question: "Quale accordo internazionale riguarda il cambiamento climatico?", answer: "Accordo di Parigi", difficulty: 2 },
-    { question: "Cos'è la COP (Conference of the Parties)?", answer: "La conferenza delle Nazioni Unite sul cambiamento climatico", difficulty: 3 },
-    { question: "Quale organizzazione internazionale ha sede a New York?", answer: "ONU (Nazioni Unite)", difficulty: 1 },
-    { question: "Cosa sono i BRICS?", answer: "Un'alleanza di economie emergenti: Brasile, Russia, India, Cina, Sudafrica (+altri)", difficulty: 3 },
-    { question: "Quale social media ha acquistato Elon Musk?", answer: "Twitter (ora X)", difficulty: 1 },
-    { question: "Cos'è l'intelligenza artificiale generativa?", answer: "AI che può creare testi, immagini, codice e altri contenuti", difficulty: 2 },
-    { question: "Quale conflitto ha coinvolto Israele e Hamas nel 2023?", answer: "La guerra di Gaza", difficulty: 2 },
-    { question: "Cos'è l'ESG?", answer: "Environmental, Social, Governance - criteri di sostenibilità aziendale", difficulty: 4 },
-    { question: "Quale paese ha ospitato i Mondiali di calcio 2022?", answer: "Qatar", difficulty: 1 },
-    { question: "Cos'è la transizione energetica?", answer: "Il passaggio dalle fonti fossili alle rinnovabili", difficulty: 2 },
-    { question: "Quale movimento sociale è iniziato con l'hashtag #MeToo?", answer: "Un movimento contro le molestie e violenze sessuali", difficulty: 2 },
-    { question: "Quale azienda ha lanciato ChatGPT?", answer: "OpenAI", difficulty: 1 },
-    { question: "Cos'è il PNRR in Italia?", answer: "Piano Nazionale di Ripresa e Resilienza", difficulty: 3 },
-    { question: "Quale criptovaluta ha avuto il maggior crollo nel 2022?", answer: "Terra Luna (LUNA)", difficulty: 4 },
-    { question: "Chi è il Segretario Generale dell'ONU?", answer: "António Guterres", difficulty: 3 },
-    { question: "Cos'è il Green Deal europeo?", answer: "Un piano UE per raggiungere la neutralità climatica entro il 2050", difficulty: 3 },
-    { question: "Quale evento ha bloccato il Canale di Suez nel 2021?", answer: "La nave Ever Given si è incagliata", difficulty: 3 },
-    { question: "Quale virus ha causato la pandemia di COVID-19?", answer: "SARS-CoV-2", difficulty: 2 },
-    { question: "Cos'è il metaverso?", answer: "Un ambiente digitale immersivo tridimensionale", difficulty: 2 },
-    { question: "Quale paese è uscito dall'UE?", answer: "Regno Unito (Brexit)", difficulty: 1 },
-    { question: "In che anno è avvenuta la Brexit?", answer: "2020 (formalmente il 31 gennaio)", difficulty: 2 },
-    { question: "Quale movimento ambientalista è guidato da Greta Thunberg?", answer: "Fridays for Future", difficulty: 2 },
-    { question: "Cos'è la NATO?", answer: "North Atlantic Treaty Organization, un'alleanza militare", difficulty: 2 },
-    { question: "Quale paese è entrato nella NATO nel 2023?", answer: "Finlandia", difficulty: 4 },
-    { question: "Cos'è la crisi energetica europea del 2022?", answer: "L'impennata dei prezzi dell'energia causata dalla guerra in Ucraina", difficulty: 3 },
-    { question: "Quale vaccino anti-COVID è stato il primo approvato in Europa?", answer: "Pfizer-BioNTech (Comirnaty)", difficulty: 3 },
-    { question: "Chi è stato eletto Papa nel 2013?", answer: "Papa Francesco (Jorge Mario Bergoglio)", difficulty: 2 },
-  ],
-  "Mitologia": [
-    { question: "Chi è il re degli dei nella mitologia greca?", answer: "Zeus", difficulty: 1 },
-    { question: "Come si chiama il dio del mare nella mitologia greca?", answer: "Poseidone", difficulty: 1 },
-    { question: "Chi è il dio della guerra nella mitologia greca?", answer: "Ares", difficulty: 1 },
-    { question: "Come si chiama il mondo dei morti nella mitologia norrena?", answer: "Helheim", difficulty: 3 },
-    { question: "Chi è la dea della saggezza nella mitologia greca?", answer: "Atena", difficulty: 1 },
-    { question: "Cos'è il Minotauro?", answer: "Una creatura metà uomo e metà toro nel labirinto di Creta", difficulty: 2 },
-    { question: "Chi è il fabbro degli dei nella mitologia greca?", answer: "Efesto", difficulty: 3 },
-    { question: "Come si chiama l'albero cosmico della mitologia norrena?", answer: "Yggdrasil", difficulty: 3 },
-    { question: "Chi è il messaggero degli dei?", answer: "Hermes (o Mercurio)", difficulty: 2 },
-    { question: "Quale eroe ha compiuto le 12 fatiche?", answer: "Ercole (Eracle)", difficulty: 1 },
-    { question: "Chi era Medusa?", answer: "Una Gorgone con serpenti al posto dei capelli", difficulty: 2 },
-    { question: "Cos'è il vaso di Pandora?", answer: "Un vaso che conteneva tutti i mali del mondo", difficulty: 2 },
-    { question: "Chi è il padre di Thor nella mitologia norrena?", answer: "Odino", difficulty: 1 },
-    { question: "Cos'è il Ragnarök?", answer: "La fine del mondo nella mitologia norrena", difficulty: 3 },
-    { question: "Chi rapì Persefone portandola negli Inferi?", answer: "Ade", difficulty: 2 },
-    { question: "Quale animale era sacro a Bastet nella mitologia egizia?", answer: "Il gatto", difficulty: 2 },
-    { question: "Chi è il dio del Sole nella mitologia egizia?", answer: "Ra", difficulty: 2 },
-    { question: "Cos'è la fenice?", answer: "Un uccello mitologico che rinasce dalle proprie ceneri", difficulty: 1 },
-    { question: "Chi è Loki nella mitologia norrena?", answer: "Il dio dell'inganno", difficulty: 2 },
-    { question: "Quale eroe greco costruì il cavallo di Troia?", answer: "Ulisse (Odisseo)", difficulty: 2 },
-    { question: "Chi erano le Muse?", answer: "Le nove dee ispiratrici delle arti e delle scienze", difficulty: 3 },
-    { question: "Cos'è il Valhalla?", answer: "Il palazzo di Odino dove vanno i guerrieri caduti in battaglia", difficulty: 2 },
-    { question: "Chi era Prometeo?", answer: "Il titano che rubò il fuoco agli dei per darlo agli uomini", difficulty: 2 },
-    { question: "Quale mostro aveva nove teste nella mitologia greca?", answer: "L'Idra di Lerna", difficulty: 3 },
-    { question: "Chi è la dea dell'amore nella mitologia greca?", answer: "Afrodite", difficulty: 1 },
-    { question: "Cos'è lo Stige?", answer: "Il fiume che separa il mondo dei vivi da quello dei morti", difficulty: 3 },
-    { question: "Chi era Anubi nella mitologia egizia?", answer: "Il dio dei morti e dell'imbalsamazione", difficulty: 3 },
-    { question: "Cos'è il Kraken?", answer: "Un mostro marino gigante della mitologia norrena", difficulty: 2 },
-    { question: "Chi era Icaro?", answer: "Il ragazzo che volò troppo vicino al Sole con ali di cera", difficulty: 2 },
-    { question: "Quale creatura aveva corpo di leone e testa umana nella mitologia egizia?", answer: "La Sfinge", difficulty: 2 },
-  ],
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function pickN<T>(arr: T[], n: number): T[] {
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n);
+}
+
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// ─── MCU ───────────────────────────────────────────────
+const mcuFacts: { q: string; a: string; d: number }[] = [
+  { q: "Chi interpreta Tony Stark nel MCU?", a: "Robert Downey Jr.", d: 1 },
+  { q: "Come si chiama il martello di Thor?", a: "Mjolnir", d: 1 },
+  { q: "Quale personaggio dice 'I am Groot'?", a: "Groot", d: 1 },
+  { q: "Chi interpreta il Capitano America?", a: "Chris Evans", d: 1 },
+  { q: "Qual è il nome del regno di T'Challa?", a: "Wakanda", d: 1 },
+  { q: "In quale film appare per la prima volta Spider-Man nel MCU?", a: "Captain America: Civil War", d: 2 },
+  { q: "Qual è il vero nome di Black Widow?", a: "Natasha Romanoff", d: 2 },
+  { q: "Come si chiama il pianeta natale di Thor?", a: "Asgard", d: 2 },
+  { q: "Quale attore interpreta Loki?", a: "Tom Hiddleston", d: 2 },
+  { q: "Chi è il villain principale di Avengers: Infinity War?", a: "Thanos", d: 2 },
+  { q: "Quante Gemme dell'Infinito esistono?", a: "Sei", d: 2 },
+  { q: "In quale film muore Tony Stark?", a: "Avengers: Endgame", d: 2 },
+  { q: "Quale Gemma dell'Infinito si trova nella Mente di Vision?", a: "La Gemma della Mente", d: 3 },
+  { q: "Come si chiama l'organizzazione segreta infiltrata nello S.H.I.E.L.D.?", a: "HYDRA", d: 3 },
+  { q: "Chi ha creato Ultron?", a: "Tony Stark e Bruce Banner", d: 3 },
+  { q: "Come si chiama la sostanza che alimenta il cuore di Wakanda?", a: "Vibranio (Vibranium)", d: 3 },
+  { q: "Come si chiama il metallo dello scudo di Cap?", a: "Vibranio", d: 3 },
+  { q: "In quale Avengers appare per la prima volta la Scarlet Witch?", a: "Avengers: Age of Ultron", d: 3 },
+  { q: "Chi è il regista di Avengers: Endgame?", a: "Anthony e Joe Russo", d: 4 },
+  { q: "Come si chiama la figlia di Tony Stark?", a: "Morgan Stark", d: 4 },
+  { q: "Chi è il Sorcerer Supreme prima di Doctor Strange?", a: "L'Antico (The Ancient One)", d: 4 },
+  { q: "Chi è il padre biologico di Star-Lord?", a: "Ego", d: 4 },
+  { q: "Chi ha sacrificato la propria vita su Vormir per la Gemma dell'Anima in Endgame?", a: "Natasha Romanoff", d: 4 },
+  { q: "Qual è il nome del gatto di Nick Fury in Captain Marvel?", a: "Goose (un Flerken)", d: 5 },
+  { q: "Come si chiama l'intelligenza artificiale che sostituisce J.A.R.V.I.S.?", a: "F.R.I.D.A.Y.", d: 5 },
+  { q: "In quale pianeta Star-Lord è stato rapito da bambino?", a: "Terra (Missouri)", d: 5 },
+  { q: "Chi interpreta Shang-Chi?", a: "Simu Liu", d: 5 },
+  { q: "Qual è il numero dell'universo principale del MCU nel multiverso?", a: "Terra-616", d: 6 },
+  { q: "In quale anno è ambientato il prologo di Black Panther?", a: "1992", d: 6 },
+  { q: "Quanti film ha la Fase 1 del MCU?", a: "Sei", d: 6 },
+  { q: "Quale variante di Loki è una donna nella serie TV Loki?", a: "Sylvie", d: 5 },
+  { q: "Come si chiama il figlio di Wanda e Vision che ha superpoteri di velocità?", a: "Tommy (Speed)", d: 6 },
+  { q: "Quale film del MCU ha incassato di più al botteghino mondiale?", a: "Avengers: Endgame", d: 4 },
+  { q: "Chi è il villain di Doctor Strange nel Multiverso della Follia?", a: "Scarlet Witch (Wanda Maximoff)", d: 5 },
+  { q: "Come si chiama il nano che forgia Stormbreaker?", a: "Eitri", d: 7 },
+  { q: "In quale dimensione è intrappolato Doctor Strange da Dormammu?", a: "Dimensione Oscura", d: 6 },
+  { q: "Qual è il nome del programma con cui Wanda crea la realtà alternativa in WandaVision?", a: "L'Hex", d: 7 },
+  { q: "Chi è il creatore degli Eterni nel MCU?", a: "Arishem il Giudice (un Celestiale)", d: 8 },
+  { q: "Quanti snap vengono fatti con il Guanto dell'Infinito in Endgame?", a: "Tre (Thanos, Hulk, Tony)", d: 7 },
+  { q: "Come si chiama il pianeta dove Thanos si ritira dopo lo Snap?", a: "Il Giardino", d: 8 },
+];
+
+// ─── STORIA ────────────────────────────────────────────
+const storiaFacts: { q: string; a: string; d: number }[] = [
+  { q: "In che anno è caduto il Muro di Berlino?", a: "1989", d: 1 },
+  { q: "In che anno Cristoforo Colombo raggiunse l'America?", a: "1492", d: 1 },
+  { q: "Chi era il primo imperatore romano?", a: "Augusto (Ottaviano)", d: 2 },
+  { q: "Quale civiltà costruì Machu Picchu?", a: "Gli Inca", d: 2 },
+  { q: "In che anno iniziò la Prima Guerra Mondiale?", a: "1914", d: 2 },
+  { q: "Chi è stato l'ultimo Re d'Italia?", a: "Umberto II", d: 4 },
+  { q: "Chi ha scritto 'Il Principe'?", a: "Niccolò Machiavelli", d: 3 },
+  { q: "In che anno fu fondata Roma secondo la tradizione?", a: "753 a.C.", d: 3 },
+  { q: "Chi guidò gli Ebrei fuori dall'Egitto secondo la Bibbia?", a: "Mosè", d: 2 },
+  { q: "In quale anno avvenne la Rivoluzione Francese?", a: "1789", d: 2 },
+  { q: "Chi era il dittatore della Germania nazista?", a: "Adolf Hitler", d: 1 },
+  { q: "Quale impero fu sconfitto nella Battaglia di Waterloo?", a: "L'Impero francese di Napoleone", d: 3 },
+  { q: "In che anno l'Italia divenne una repubblica?", a: "1946", d: 3 },
+  { q: "Chi fu il primo presidente degli Stati Uniti?", a: "George Washington", d: 1 },
+  { q: "Quale trattato pose fine alla Prima Guerra Mondiale?", a: "Trattato di Versailles", d: 4 },
+  { q: "Chi fu assassinato il 15 marzo 44 a.C.?", a: "Giulio Cesare", d: 3 },
+  { q: "In che anno fu firmata la Costituzione Italiana?", a: "1947 (entrata in vigore 1948)", d: 4 },
+  { q: "Quale civiltà inventò la scrittura cuneiforme?", a: "I Sumeri", d: 5 },
+  { q: "Chi guidò la Marcia su Roma nel 1922?", a: "Benito Mussolini", d: 3 },
+  { q: "In quale anno cadde l'Impero Romano d'Occidente?", a: "476 d.C.", d: 4 },
+  { q: "Chi scoprì la penicillina?", a: "Alexander Fleming", d: 3 },
+  { q: "In quale battaglia Napoleone fu definitivamente sconfitto?", a: "Waterloo (1815)", d: 3 },
+  { q: "Quale faraone è associato alla costruzione della Grande Piramide di Giza?", a: "Cheope (Khufu)", d: 5 },
+  { q: "Chi era il leader dell'URSS durante la Seconda Guerra Mondiale?", a: "Iosif Stalin", d: 3 },
+  { q: "In che anno fu abolita la schiavitù negli USA?", a: "1865 (XIII Emendamento)", d: 5 },
+  { q: "Quale imperatore romano legalizzò il Cristianesimo?", a: "Costantino I (Editto di Milano, 313)", d: 5 },
+  { q: "Chi fu il primo uomo a camminare sulla Luna?", a: "Neil Armstrong", d: 1 },
+  { q: "In quale anno fu bombardata Pearl Harbor?", a: "1941", d: 4 },
+  { q: "Quale popolo costruì i nuraghi in Sardegna?", a: "I Nuragici", d: 6 },
+  { q: "In che anno Gutenberg inventò la stampa a caratteri mobili?", a: "Circa 1440", d: 6 },
+  { q: "Chi era Hammurabi?", a: "Re di Babilonia autore di uno dei primi codici di leggi", d: 6 },
+  { q: "In quale anno iniziò la Guerra dei Cent'anni?", a: "1337", d: 7 },
+  { q: "Quale filosofo greco fu condannato a bere la cicuta?", a: "Socrate", d: 4 },
+  { q: "Chi fu l'ultimo imperatore romano d'Occidente?", a: "Romolo Augustolo", d: 7 },
+  { q: "In che anno la Cina divenne una repubblica popolare?", a: "1949", d: 5 },
+  { q: "Quale popolo fondò Cartagine?", a: "I Fenici", d: 6 },
+];
+
+// ─── SCIENZA ───────────────────────────────────────────
+const scienzaFacts: { q: string; a: string; d: number }[] = [
+  { q: "Qual è il simbolo chimico dell'acqua?", a: "H₂O", d: 1 },
+  { q: "Qual è la velocità della luce nel vuoto?", a: "Circa 300.000 km/s", d: 2 },
+  { q: "Quanti cromosomi ha l'essere umano?", a: "46", d: 2 },
+  { q: "Chi ha formulato la teoria della relatività?", a: "Albert Einstein", d: 1 },
+  { q: "Qual è l'elemento chimico più abbondante nell'universo?", a: "Idrogeno", d: 2 },
+  { q: "Cos'è il DNA?", a: "Acido desossiribonucleico, portatore dell'informazione genetica", d: 2 },
+  { q: "Qual è l'unità di misura della forza?", a: "Newton (N)", d: 2 },
+  { q: "Quale scienziato scoprì la gravità osservando una mela?", a: "Isaac Newton", d: 1 },
+  { q: "Qual è l'organo più grande del corpo umano?", a: "La pelle", d: 2 },
+  { q: "Cos'è la fotosintesi?", a: "Il processo con cui le piante convertono luce solare in energia", d: 2 },
+  { q: "Qual è il numero atomico dell'ossigeno?", a: "8", d: 3 },
+  { q: "Cosa studia la tassonomia?", a: "La classificazione degli esseri viventi", d: 4 },
+  { q: "Quale particella subatomica ha carica negativa?", a: "L'elettrone", d: 3 },
+  { q: "Cos'è un buco nero?", a: "Una regione dello spazio con gravità così forte che nulla può sfuggire", d: 3 },
+  { q: "Quale gas compone circa il 78% dell'atmosfera terrestre?", a: "Azoto (N₂)", d: 3 },
+  { q: "Chi ha scoperto la struttura a doppia elica del DNA?", a: "Watson e Crick (e Rosalind Franklin)", d: 4 },
+  { q: "Cos'è l'entropia?", a: "La misura del disordine di un sistema termodinamico", d: 5 },
+  { q: "Quale legge afferma che 'ad ogni azione corrisponde una reazione uguale e contraria'?", a: "Terza legge di Newton", d: 3 },
+  { q: "Qual è la costante di Avogadro?", a: "6,022 × 10²³", d: 5 },
+  { q: "Cos'è la mitosi?", a: "La divisione cellulare che produce due cellule identiche", d: 3 },
+  { q: "Quale elemento ha simbolo Fe?", a: "Ferro", d: 2 },
+  { q: "Cos'è la fusione nucleare?", a: "L'unione di nuclei atomici leggeri che libera energia", d: 4 },
+  { q: "Quale scienziato formulò le leggi dell'ereditarietà?", a: "Gregor Mendel", d: 4 },
+  { q: "Cos'è un isotopo?", a: "Atomi dello stesso elemento con diverso numero di neutroni", d: 5 },
+  { q: "Qual è la formula dell'energia cinetica?", a: "½mv²", d: 4 },
+  { q: "Cos'è l'effetto Doppler?", a: "Il cambiamento di frequenza di un'onda dovuto al moto relativo", d: 5 },
+  { q: "Quale legge descrive la relazione tra pressione e volume di un gas?", a: "Legge di Boyle", d: 5 },
+  { q: "Cos'è un quark?", a: "Una particella elementare costituente di protoni e neutroni", d: 6 },
+  { q: "Qual è la teoria che unifica elettromagnetismo e forza debole?", a: "Teoria elettrodebole", d: 7 },
+  { q: "Cos'è la costante di Planck?", a: "Una costante fondamentale (h ≈ 6,626 × 10⁻³⁴ J·s) che lega energia e frequenza", d: 7 },
+  { q: "Quale principio afferma che non si possono conoscere simultaneamente posizione e quantità di moto?", a: "Principio di indeterminazione di Heisenberg", d: 6 },
+];
+
+// ─── SPAZIO ────────────────────────────────────────────
+const spazioFacts: { q: string; a: string; d: number }[] = [
+  { q: "Qual è il pianeta più grande del Sistema Solare?", a: "Giove", d: 1 },
+  { q: "Qual è il pianeta più vicino al Sole?", a: "Mercurio", d: 1 },
+  { q: "Quanti pianeti ha il Sistema Solare?", a: "Otto", d: 1 },
+  { q: "Qual è il satellite naturale della Terra?", a: "La Luna", d: 1 },
+  { q: "Quale pianeta è noto come il Pianeta Rosso?", a: "Marte", d: 1 },
+  { q: "In che anno l'uomo è andato sulla Luna per la prima volta?", a: "1969", d: 2 },
+  { q: "Cos'è una stella cadente?", a: "Una meteora, frammento che brucia nell'atmosfera", d: 2 },
+  { q: "Qual è la stella più vicina alla Terra?", a: "Il Sole", d: 1 },
+  { q: "Quale pianeta ha gli anelli più visibili?", a: "Saturno", d: 1 },
+  { q: "Cos'è la Via Lattea?", a: "La nostra galassia", d: 2 },
+  { q: "Quanto dista la Terra dal Sole in media?", a: "Circa 150 milioni di km (1 UA)", d: 3 },
+  { q: "Cos'è un'unità astronomica?", a: "La distanza media Terra-Sole", d: 3 },
+  { q: "Quale sonda ha lasciato il Sistema Solare per prima?", a: "Voyager 1", d: 4 },
+  { q: "Cos'è una supernova?", a: "L'esplosione di una stella massiccia alla fine della sua vita", d: 3 },
+  { q: "Qual è il monte più alto del Sistema Solare?", a: "Monte Olimpo su Marte", d: 4 },
+  { q: "Cos'è la fascia di Kuiper?", a: "Una regione oltre Nettuno ricca di corpi ghiacciati", d: 5 },
+  { q: "Quale telescopio spaziale è stato lanciato nel 2021?", a: "James Webb Space Telescope", d: 4 },
+  { q: "Cos'è un anno luce?", a: "La distanza percorsa dalla luce in un anno (~9,46 trilioni di km)", d: 3 },
+  { q: "Quale pianeta ruota su un asse quasi orizzontale?", a: "Urano", d: 5 },
+  { q: "Cos'è la radiazione cosmica di fondo?", a: "La radiazione residua del Big Bang", d: 6 },
+  { q: "Quale legge descrive il moto dei pianeti attorno al Sole?", a: "Le leggi di Keplero", d: 5 },
+  { q: "Cos'è un pulsar?", a: "Una stella di neutroni in rapida rotazione che emette radiazioni", d: 6 },
+  { q: "Qual è il diametro approssimativo della Via Lattea?", a: "Circa 100.000 anni luce", d: 6 },
+  { q: "Quale missione portò il primo rover su Marte?", a: "Mars Pathfinder (Sojourner, 1997)", d: 7 },
+  { q: "Cos'è la materia oscura?", a: "Materia che non emette luce ma esercita gravità, ~27% dell'universo", d: 7 },
+];
+
+// ─── GEOGRAFIA ─────────────────────────────────────────
+const geografiaFacts: { q: string; a: string; d: number }[] = [
+  { q: "Qual è la capitale della Francia?", a: "Parigi", d: 1 },
+  { q: "Qual è il fiume più lungo del mondo?", a: "Il Nilo (o il Rio delle Amazzoni)", d: 2 },
+  { q: "Qual è il continente più grande?", a: "Asia", d: 1 },
+  { q: "In quale continente si trova l'Egitto?", a: "Africa", d: 1 },
+  { q: "Qual è la montagna più alta del mondo?", a: "Monte Everest", d: 1 },
+  { q: "Qual è la capitale dell'Australia?", a: "Canberra", d: 3 },
+  { q: "Quanti oceani ci sono?", a: "Cinque", d: 2 },
+  { q: "Qual è il deserto più grande del mondo?", a: "Il Sahara (o l'Antartide come deserto freddo)", d: 3 },
+  { q: "Quale Paese ha più abitanti al mondo?", a: "India (dal 2023)", d: 3 },
+  { q: "Qual è la capitale del Canada?", a: "Ottawa", d: 3 },
+  { q: "In quale Paese si trova il Machu Picchu?", a: "Perù", d: 2 },
+  { q: "Qual è il lago più grande d'Italia?", a: "Lago di Garda", d: 3 },
+  { q: "Quale Paese ha la forma di uno stivale?", a: "Italia", d: 1 },
+  { q: "Qual è la capitale del Brasile?", a: "Brasilia", d: 3 },
+  { q: "Quale mare separa l'Italia dalla Croazia?", a: "Mar Adriatico", d: 2 },
+  { q: "Qual è il vulcano più alto d'Europa?", a: "Etna", d: 3 },
+  { q: "Qual è la capitale della Mongolia?", a: "Ulaanbaatar", d: 5 },
+  { q: "In quale oceano si trova il Madagascar?", a: "Oceano Indiano", d: 3 },
+  { q: "Quale nazione ha più isole al mondo?", a: "Svezia", d: 6 },
+  { q: "Qual è la capitale del Myanmar?", a: "Naypyidaw", d: 7 },
+  { q: "Qual è il punto più profondo degli oceani?", a: "Fossa delle Marianne (Challenger Deep)", d: 4 },
+  { q: "Quale Paese è attraversato sia dall'Equatore che dal Meridiano di Greenwich?", a: "Ghana (approssimativamente)", d: 7 },
+  { q: "Qual è il fiume più lungo d'Europa?", a: "Volga", d: 4 },
+  { q: "Quale catena montuosa separa Europa e Asia?", a: "Monti Urali", d: 4 },
+  { q: "Qual è lo Stato più piccolo del mondo?", a: "Città del Vaticano", d: 2 },
+];
+
+// ─── ITALIANO ──────────────────────────────────────────
+const italianoFacts: { q: string; a: string; d: number }[] = [
+  { q: "Chi ha scritto la Divina Commedia?", a: "Dante Alighieri", d: 1 },
+  { q: "Qual è il plurale di 'uomo'?", a: "Uomini", d: 1 },
+  { q: "Cos'è un sinonimo?", a: "Una parola con significato simile a un'altra", d: 1 },
+  { q: "Chi ha scritto 'I Promessi Sposi'?", a: "Alessandro Manzoni", d: 2 },
+  { q: "Qual è il contrario di 'effimero'?", a: "Duraturo/Eterno", d: 4 },
+  { q: "Cos'è una metafora?", a: "Una figura retorica che trasferisce il significato da un termine a un altro", d: 2 },
+  { q: "Quante sono le vocali nella lingua italiana?", a: "Cinque (a, e, i, o, u)", d: 1 },
+  { q: "Cos'è un ossimoro?", a: "L'accostamento di due termini contraddittori", d: 4 },
+  { q: "Chi ha scritto 'Il Gattopardo'?", a: "Giuseppe Tomasi di Lampedusa", d: 4 },
+  { q: "Cos'è l'anacoluto?", a: "Una rottura nella costruzione sintattica della frase", d: 6 },
+  { q: "Qual è il tempo verbale di 'avessi parlato'?", a: "Congiuntivo trapassato", d: 5 },
+  { q: "Chi ha scritto 'Se questo è un uomo'?", a: "Primo Levi", d: 3 },
+  { q: "Cos'è un endecasillabo?", a: "Un verso di undici sillabe", d: 4 },
+  { q: "Cos'è la sineddoche?", a: "Figura retorica che usa la parte per il tutto o viceversa", d: 5 },
+  { q: "Chi ha scritto 'L'Infinito'?", a: "Giacomo Leopardi", d: 2 },
+  { q: "Qual è la differenza tra 'che' congiunzione e 'che' pronome relativo?", a: "La congiunzione introduce subordinate, il pronome relativo sostituisce un nome", d: 5 },
+  { q: "Chi ha fondato il movimento del Futurismo letterario?", a: "Filippo Tommaso Marinetti", d: 5 },
+  { q: "Cos'è un chiasmo?", a: "Disposizione incrociata di elementi (AB-BA)", d: 6 },
+  { q: "Chi ha scritto 'Le Operette Morali'?", a: "Giacomo Leopardi", d: 4 },
+  { q: "Cos'è il correlativo oggettivo in Montale?", a: "Un oggetto/situazione che esprime un'emozione interna", d: 7 },
+  { q: "Chi è l'autore di 'Uno, Nessuno e Centomila'?", a: "Luigi Pirandello", d: 3 },
+  { q: "Cos'è l'enjambement?", a: "La continuazione del senso di un verso nel successivo", d: 4 },
+];
+
+// ─── MATEMATICA ────────────────────────────────────────
+const matematicaGenerators: QuestionGenerator[] = [
+  (d) => {
+    const a = randInt(2, 5 + d * 3); const b = randInt(2, 5 + d * 3);
+    return { question: `Quanto fa ${a} × ${b}?`, answer: `${a * b}`, difficulty: d };
+  },
+  (d) => {
+    const n = randInt(10, 50 + d * 20);
+    return { question: `Qual è la radice quadrata di ${n * n}?`, answer: `${n}`, difficulty: d };
+  },
+  (d) => {
+    const base = randInt(2, 4 + d); const exp = randInt(2, 2 + Math.floor(d / 3));
+    return { question: `Quanto fa ${base}^${exp}?`, answer: `${Math.pow(base, exp)}`, difficulty: d };
+  },
+  (d) => {
+    const nums = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
+    const n = nums[randInt(0, Math.min(nums.length - 1, 3 + d))];
+    return { question: `${n} è un numero primo?`, answer: "Sì", difficulty: d };
+  },
+  (d) => {
+    const a = randInt(10 * d, 20 * d); const b = randInt(5, 10 * d);
+    return { question: `Quanto fa ${a} + ${b}?`, answer: `${a + b}`, difficulty: d };
+  },
+  (d) => {
+    const perc = pick([10, 15, 20, 25, 30, 50]); const of_ = randInt(2, 5) * 100;
+    return { question: `Qual è il ${perc}% di ${of_}?`, answer: `${(perc * of_) / 100}`, difficulty: d };
+  },
+  (d) => {
+    const a = randInt(2, 5 + d); const b = randInt(2, 5 + d);
+    return { question: `Qual è il MCD di ${a * 6} e ${b * 6}?`, answer: `${gcd(a * 6, b * 6)}`, difficulty: d };
+  },
+  (_d) => {
+    const shapes = [
+      { name: "triangolo con base 10 e altezza 6", a: "30" },
+      { name: "cerchio con raggio 7 (arrotondato)", a: "≈153.94" },
+      { name: "rettangolo 8×5", a: "40" },
+      { name: "quadrato con lato 9", a: "81" },
+      { name: "trapezio con basi 6 e 10 e altezza 4", a: "32" },
+    ];
+    const s = pick(shapes);
+    return { question: `Qual è l'area di un ${s.name}?`, answer: s.a, difficulty: _d };
+  },
+];
+
+const matematicaFacts: { q: string; a: string; d: number }[] = [
+  { q: "Cos'è il pi greco?", a: "Il rapporto tra la circonferenza e il diametro di un cerchio (≈3,14159)", d: 3 },
+  { q: "Cos'è un numero irrazionale?", a: "Un numero che non può essere espresso come rapporto tra due interi", d: 4 },
+  { q: "Quale matematico è famoso per l'ultimo teorema?", a: "Pierre de Fermat", d: 5 },
+  { q: "Cos'è la successione di Fibonacci?", a: "Una sequenza in cui ogni numero è la somma dei due precedenti (1,1,2,3,5,8...)", d: 4 },
+  { q: "Cos'è un logaritmo?", a: "L'esponente a cui elevare la base per ottenere un dato numero", d: 5 },
+  { q: "Qual è la formula dell'area del cerchio?", a: "πr²", d: 2 },
+  { q: "Cos'è il teorema di Pitagora?", a: "In un triangolo rettangolo: a² + b² = c²", d: 2 },
+  { q: "Cos'è una matrice?", a: "Una tabella rettangolare di numeri organizzata in righe e colonne", d: 5 },
+  { q: "Cos'è un numero complesso?", a: "Un numero nella forma a + bi, dove i è l'unità immaginaria", d: 6 },
+  { q: "Qual è la derivata di x²?", a: "2x", d: 5 },
+];
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+// ─── SPORT ─────────────────────────────────────────────
+const sportFacts: { q: string; a: string; d: number }[] = [
+  { q: "Quanti giocatori ci sono in una squadra di calcio?", a: "11", d: 1 },
+  { q: "In quale sport si usa la racchetta e il volano?", a: "Badminton", d: 2 },
+  { q: "Chi ha vinto più Palloni d'Oro?", a: "Lionel Messi", d: 2 },
+  { q: "Quanto dura una partita di calcio regolamentare?", a: "90 minuti (due tempi da 45)", d: 1 },
+  { q: "In quale Paese si sono svolte le Olimpiadi del 2020?", a: "Giappone (Tokyo, nel 2021)", d: 2 },
+  { q: "Qual è lo sport nazionale del Giappone?", a: "Sumo", d: 3 },
+  { q: "Chi detiene il record dei 100 metri piani?", a: "Usain Bolt (9.58s)", d: 3 },
+  { q: "Quanti set servono per vincere una partita di tennis maschile al Grand Slam?", a: "3 su 5", d: 3 },
+  { q: "In quale sport si esegue una 'schiacciata'?", a: "Pallavolo (o Tennis/Badminton)", d: 2 },
+  { q: "Quale squadra di calcio ha vinto più Champions League?", a: "Real Madrid", d: 3 },
+  { q: "In quale anno l'Italia ha vinto l'ultimo Mondiale di calcio?", a: "2006", d: 2 },
+  { q: "Chi è il marcatore più prolifico nella storia della Serie A?", a: "Silvio Piola", d: 5 },
+  { q: "Quale tennista ha vinto più titoli del Grande Slam?", a: "Novak Djokovic", d: 3 },
+  { q: "In quale sport si compete nel Tour de France?", a: "Ciclismo", d: 1 },
+  { q: "Quanti punti vale un touchdown nel football americano?", a: "6", d: 3 },
+  { q: "Quale Paese ha ospitato i primi Giochi Olimpici moderni?", a: "Grecia (Atene, 1896)", d: 4 },
+  { q: "Chi è il nuotatore più decorato nella storia olimpica?", a: "Michael Phelps", d: 3 },
+  { q: "In quale sport si usa il termine 'birdie'?", a: "Golf", d: 3 },
+  { q: "Quale squadra NBA ha vinto più titoli?", a: "Boston Celtics", d: 4 },
+  { q: "Cos'è l'heptathlon?", a: "Una disciplina di atletica con 7 prove", d: 5 },
+  { q: "Chi è l'allenatore più vincente nella storia del calcio?", a: "Sir Alex Ferguson", d: 4 },
+  { q: "Quale pilota di F1 ha vinto più campionati mondiali?", a: "Lewis Hamilton e Michael Schumacher (7 ciascuno)", d: 4 },
+  { q: "In quale anno si tennero le prime Olimpiadi invernali?", a: "1924 (Chamonix)", d: 6 },
+  { q: "Cosa significa il termine 'hat-trick' nel calcio?", a: "Tre gol segnati dallo stesso giocatore nella stessa partita", d: 2 },
+];
+
+// ─── FILM ──────────────────────────────────────────────
+const filmFacts: { q: string; a: string; d: number }[] = [
+  { q: "Chi è il regista di 'Titanic'?", a: "James Cameron", d: 1 },
+  { q: "In quale anno è uscito il primo film di Star Wars?", a: "1977", d: 2 },
+  { q: "Quale attore interpreta Jack Sparrow?", a: "Johnny Depp", d: 1 },
+  { q: "Quale film ha vinto l'Oscar come miglior film nel 1994?", a: "Forrest Gump", d: 3 },
+  { q: "Chi è il regista di 'Pulp Fiction'?", a: "Quentin Tarantino", d: 2 },
+  { q: "In quale film si dice 'Io sono tuo padre'?", a: "Star Wars: L'Impero colpisce ancora", d: 1 },
+  { q: "Quale attrice interpreta Katniss Everdeen?", a: "Jennifer Lawrence", d: 2 },
+  { q: "Chi è il regista della trilogia de Il Signore degli Anelli?", a: "Peter Jackson", d: 2 },
+  { q: "Quale film d'animazione Pixar parla di emozioni personificate?", a: "Inside Out", d: 2 },
+  { q: "Chi interpreta il Joker nel film del 2019?", a: "Joaquin Phoenix", d: 2 },
+  { q: "Quale film ha la frase 'Francamente, me ne infischio'?", a: "Via col vento", d: 3 },
+  { q: "Chi è il regista di 'Inception'?", a: "Christopher Nolan", d: 2 },
+  { q: "Quale film ha vinto 11 Oscar come Il Signore degli Anelli: Il ritorno del re?", a: "Ben-Hur e Titanic", d: 5 },
+  { q: "Chi interpreta Neo in Matrix?", a: "Keanu Reeves", d: 1 },
+  { q: "Quale film di Kubrick è ambientato nello spazio?", a: "2001: Odissea nello spazio", d: 3 },
+  { q: "Chi è il compositore delle colonne sonore di molti film di Spielberg?", a: "John Williams", d: 3 },
+  { q: "In quale film Humphrey Bogart dice 'Sarà sempre il nostro Parigi'?", a: "Casablanca", d: 4 },
+  { q: "Chi ha diretto 'Parasite' (2019)?", a: "Bong Joon-ho", d: 4 },
+  { q: "Quale regista italiano ha vinto 3 Oscar?", a: "Federico Fellini (onorario e per film)", d: 5 },
+  { q: "In quale anno è uscito 'Il Padrino'?", a: "1972", d: 3 },
+  { q: "Chi è il regista di 'Schindler's List'?", a: "Steven Spielberg", d: 2 },
+  { q: "Quale film ha il famoso dialogo 'Tu non puoi reggere la verità!'?", a: "Codice d'onore (A Few Good Men)", d: 5 },
+  { q: "Chi interpreta Forrest Gump?", a: "Tom Hanks", d: 1 },
+  { q: "Quale film italiano vinse l'Oscar come miglior film straniero nel 1999?", a: "La vita è bella", d: 3 },
+];
+
+// ─── SERIE TV ──────────────────────────────────────────
+const serieTvFacts: { q: string; a: string; d: number }[] = [
+  { q: "Come si chiama il protagonista di Breaking Bad?", a: "Walter White", d: 1 },
+  { q: "In quale serie TV si combatte per il Trono di Spade?", a: "Game of Thrones", d: 1 },
+  { q: "Quante stagioni ha Friends?", a: "10", d: 2 },
+  { q: "Come si chiama il bar di How I Met Your Mother?", a: "MacLaren's Pub", d: 3 },
+  { q: "Chi è il creatore di Stranger Things?", a: "I fratelli Duffer", d: 3 },
+  { q: "In quale serie un professore organizza una rapina alla Zecca di Spagna?", a: "La Casa di Carta", d: 1 },
+  { q: "Quale attore interpreta Sheldon Cooper in The Big Bang Theory?", a: "Jim Parsons", d: 2 },
+  { q: "In quale serie TV si dice 'Winter is coming'?", a: "Game of Thrones", d: 1 },
+  { q: "Come si chiama il protagonista di Narcos?", a: "Pablo Escobar (interpretato da Wagner Moura)", d: 2 },
+  { q: "Quale serie Netflix è ambientata nel mondo degli scacchi?", a: "La regina degli scacchi (The Queen's Gambit)", d: 3 },
+  { q: "In quale anno è iniziata la serie Lost?", a: "2004", d: 4 },
+  { q: "Chi è il creatore di Black Mirror?", a: "Charlie Brooker", d: 4 },
+  { q: "Quale serie HBO racconta la storia della famiglia Soprano?", a: "I Soprano (The Sopranos)", d: 2 },
+  { q: "In quale serie un chimico produce metanfetamina nel deserto?", a: "Breaking Bad", d: 1 },
+  { q: "Quale serie anime è la più lunga in termini di episodi?", a: "Sazae-san (o One Piece tra le più note)", d: 5 },
+  { q: "Come si chiama il protagonista di Peaky Blinders?", a: "Thomas Shelby", d: 2 },
+  { q: "Quale serie è ambientata nella prigione di Wentworth/Fox River?", a: "Prison Break", d: 2 },
+  { q: "Chi interpreta Eleven in Stranger Things?", a: "Millie Bobby Brown", d: 2 },
+  { q: "Quale serie racconta la vita alla corte di Luigi XIV a Versailles?", a: "Versailles", d: 5 },
+  { q: "In quale serie un gioco per bambini diventa mortale?", a: "Squid Game", d: 1 },
+  { q: "Chi ha creato la serie The Office (versione americana)?", a: "Greg Daniels (adattamento di Ricky Gervais e Stephen Merchant)", d: 5 },
+  { q: "Quale serie HBO ha come protagonista un parco a tema con androidi?", a: "Westworld", d: 3 },
+  { q: "Quante stagioni ha Breaking Bad?", a: "5", d: 3 },
+];
+
+// ─── MUSICA ────────────────────────────────────────────
+const musicaFacts: { q: string; a: string; d: number }[] = [
+  { q: "Chi ha composto la Nona Sinfonia?", a: "Ludwig van Beethoven", d: 2 },
+  { q: "Quale band ha cantato 'Bohemian Rhapsody'?", a: "Queen", d: 1 },
+  { q: "Chi è il 'Re del Pop'?", a: "Michael Jackson", d: 1 },
+  { q: "Quale strumento ha 88 tasti?", a: "Il pianoforte", d: 1 },
+  { q: "Chi ha cantato 'Imagine'?", a: "John Lennon", d: 1 },
+  { q: "Quante corde ha una chitarra classica?", a: "Sei", d: 1 },
+  { q: "Quale cantante italiana è nota per 'La solitudine'?", a: "Laura Pausini", d: 2 },
+  { q: "Chi è il cantante dei Rolling Stones?", a: "Mick Jagger", d: 2 },
+  { q: "Quale compositore era sordo?", a: "Ludwig van Beethoven", d: 2 },
+  { q: "Quale genere musicale è nato a New Orleans?", a: "Jazz", d: 3 },
+  { q: "Chi ha composto 'Le Quattro Stagioni'?", a: "Antonio Vivaldi", d: 2 },
+  { q: "Quale cantautore italiano ha scritto 'La canzone di Marinella'?", a: "Fabrizio De André", d: 3 },
+  { q: "Cos'è un'ottava in musica?", a: "L'intervallo tra due note con la stessa denominazione", d: 3 },
+  { q: "Quale festival musicale italiano si tiene a Sanremo?", a: "Il Festival della Canzone Italiana", d: 1 },
+  { q: "Chi è il compositore de 'Il Barbiere di Siviglia'?", a: "Gioachino Rossini", d: 4 },
+  { q: "Quale rapper americano è anche noto come Slim Shady?", a: "Eminem", d: 2 },
+  { q: "Quale nota musicale segue il 'Sol'?", a: "La", d: 1 },
+  { q: "Quanti movimenti ha tipicamente una sinfonia classica?", a: "Quattro", d: 5 },
+  { q: "Chi ha composto l'opera 'Aida'?", a: "Giuseppe Verdi", d: 3 },
+  { q: "Cos'è il contrappunto?", a: "La tecnica di combinare linee melodiche indipendenti", d: 6 },
+  { q: "Quale cantante ha l'album più venduto di sempre ('Thriller')?", a: "Michael Jackson", d: 2 },
+  { q: "Chi ha composto 'La Traviata'?", a: "Giuseppe Verdi", d: 3 },
+  { q: "Quale musicista jazz è famoso per la tromba e 'What a Wonderful World'?", a: "Louis Armstrong", d: 3 },
+  { q: "Cos'è la dodecafonia?", a: "Una tecnica compositiva che usa tutti i 12 toni della scala cromatica", d: 7 },
+];
+
+// ─── TECNOLOGIA ────────────────────────────────────────
+const tecnologiaFacts: { q: string; a: string; d: number }[] = [
+  { q: "Chi ha fondato Apple?", a: "Steve Jobs, Steve Wozniak e Ronald Wayne", d: 1 },
+  { q: "Cosa significa 'HTML'?", a: "HyperText Markup Language", d: 2 },
+  { q: "In quale anno è stato lanciato il primo iPhone?", a: "2007", d: 2 },
+  { q: "Cosa significa 'CPU'?", a: "Central Processing Unit", d: 2 },
+  { q: "Chi è il fondatore di Microsoft?", a: "Bill Gates e Paul Allen", d: 1 },
+  { q: "Cosa significa 'URL'?", a: "Uniform Resource Locator", d: 3 },
+  { q: "Quale azienda ha creato Android?", a: "Google (acquisita da Android Inc.)", d: 2 },
+  { q: "In quale anno è stato fondato Facebook?", a: "2004", d: 2 },
+  { q: "Cos'è un algoritmo?", a: "Una sequenza finita di istruzioni per risolvere un problema", d: 2 },
+  { q: "Cosa significa 'AI'?", a: "Artificial Intelligence (Intelligenza Artificiale)", d: 1 },
+  { q: "Chi ha inventato il World Wide Web?", a: "Tim Berners-Lee", d: 3 },
+  { q: "Cos'è la blockchain?", a: "Un registro distribuito e immutabile di transazioni", d: 4 },
+  { q: "Quale linguaggio di programmazione è il più usato al mondo?", a: "JavaScript (o Python)", d: 3 },
+  { q: "Cos'è il cloud computing?", a: "L'uso di risorse informatiche remote tramite internet", d: 3 },
+  { q: "In quale anno è stato lanciato ChatGPT?", a: "2022", d: 3 },
+  { q: "Chi ha fondato Tesla?", a: "Elon Musk, Martin Eberhard, Marc Tarpenning, JB Straubel, Ian Wright", d: 4 },
+  { q: "Cos'è il machine learning?", a: "Un ramo dell'AI dove i sistemi imparano dai dati", d: 4 },
+  { q: "Cos'è un API?", a: "Application Programming Interface, un'interfaccia per comunicare tra software", d: 4 },
+  { q: "Quale azienda produce i chip M1 e M2?", a: "Apple", d: 3 },
+  { q: "Cos'è la crittografia end-to-end?", a: "Un sistema dove solo mittente e destinatario possono leggere i messaggi", d: 5 },
+  { q: "Cos'è un container Docker?", a: "Un ambiente isolato e leggero per eseguire applicazioni", d: 6 },
+  { q: "Quale protocollo è alla base del Web?", a: "HTTP/HTTPS", d: 3 },
+  { q: "Cos'è la legge di Moore?", a: "Il numero di transistor raddoppia circa ogni 2 anni", d: 5 },
+  { q: "Quale azienda ha creato il linguaggio Rust?", a: "Mozilla", d: 6 },
+];
+
+// ─── CULTURA POP ───────────────────────────────────────
+const culturaPopFacts: { q: string; a: string; d: number }[] = [
+  { q: "Chi è il creatore dei Simpson?", a: "Matt Groening", d: 2 },
+  { q: "Quale social media usa il logo di un uccello (fino al 2023)?", a: "Twitter", d: 1 },
+  { q: "Chi è il personaggio principale di Harry Potter?", a: "Harry Potter", d: 1 },
+  { q: "Quale gioco da tavolo ha proprietà come Parco della Vittoria?", a: "Monopoly", d: 1 },
+  { q: "Chi interpreta Harry Potter nei film?", a: "Daniel Radcliffe", d: 1 },
+  { q: "Quale saga ha come protagonisti Frodo e Gandalf?", a: "Il Signore degli Anelli", d: 1 },
+  { q: "Cos'è un meme?", a: "Un contenuto virale che si diffonde in internet", d: 1 },
+  { q: "Quale YouTuber svedese è uno dei più seguiti al mondo?", a: "PewDiePie (Felix Kjellberg)", d: 3 },
+  { q: "Chi ha creato i personaggi di Topolino e Paperino?", a: "Walt Disney", d: 1 },
+  { q: "Quale piattaforma di streaming ha il logo rosso con la 'N'?", a: "Netflix", d: 1 },
+  { q: "In quale saga un anello dona il potere dell'invisibilità?", a: "Il Signore degli Anelli", d: 2 },
+  { q: "Chi è il personaggio giapponese con i baffi e il cappello rosso?", a: "Super Mario", d: 1 },
+  { q: "Quale artista ha dipinto la Gioconda?", a: "Leonardo da Vinci", d: 1 },
+  { q: "Quale serie di libri parla di una ragazza che combatte in un'arena?", a: "Hunger Games", d: 2 },
+  { q: "Chi ha creato il manga 'One Piece'?", a: "Eiichiro Oda", d: 3 },
+  { q: "Quale app di video brevi è di proprietà di ByteDance?", a: "TikTok", d: 2 },
+  { q: "Chi è il creatore di Pokémon?", a: "Satoshi Tajiri", d: 4 },
+  { q: "Quale franchise ha generato più incassi nella storia del cinema?", a: "MCU (Marvel Cinematic Universe)", d: 3 },
+  { q: "Quale band coreana è nota per 'Dynamite' e 'Butter'?", a: "BTS", d: 2 },
+  { q: "In quale anno è nato YouTube?", a: "2005", d: 3 },
+  { q: "Chi ha scritto la saga di Harry Potter?", a: "J.K. Rowling", d: 1 },
+  { q: "Quale personaggio dei Simpson lavora alla centrale nucleare?", a: "Homer Simpson", d: 1 },
+];
+
+// ─── ARTE ──────────────────────────────────────────────
+const arteFacts: { q: string; a: string; d: number }[] = [
+  { q: "Chi ha dipinto la Gioconda?", a: "Leonardo da Vinci", d: 1 },
+  { q: "In quale museo si trova la Gioconda?", a: "Louvre (Parigi)", d: 2 },
+  { q: "Chi ha scolpito il David di Firenze?", a: "Michelangelo", d: 1 },
+  { q: "Quale artista è famoso per i girasoli?", a: "Vincent van Gogh", d: 2 },
+  { q: "Cos'è il Rinascimento?", a: "Un movimento culturale e artistico nato in Italia nel XIV-XVI secolo", d: 2 },
+  { q: "Chi ha dipinto la Cappella Sistina?", a: "Michelangelo", d: 1 },
+  { q: "Quale movimento artistico include Picasso e il cubismo?", a: "Le Avanguardie del '900", d: 3 },
+  { q: "Chi ha dipinto 'La notte stellata'?", a: "Vincent van Gogh", d: 2 },
+  { q: "Cos'è l'Impressionismo?", a: "Movimento artistico francese del XIX secolo che privilegia luce e colore", d: 3 },
+  { q: "Chi è l'autore di 'La Persistenza della Memoria' (gli orologi molli)?", a: "Salvador Dalí", d: 3 },
+  { q: "In quale città si trova la Galleria degli Uffizi?", a: "Firenze", d: 2 },
+  { q: "Chi ha dipinto 'Guernica'?", a: "Pablo Picasso", d: 3 },
+  { q: "Cos'è il Barocco?", a: "Stile artistico del XVII-XVIII sec., caratterizzato da drammaticità e ornamento", d: 4 },
+  { q: "Chi ha progettato la cupola del Duomo di Firenze?", a: "Filippo Brunelleschi", d: 4 },
+  { q: "Quale artista è noto per le sue sculture di ballerine?", a: "Edgar Degas", d: 4 },
+  { q: "Cos'è il Dadaismo?", a: "Movimento artistico anti-arte nato nel 1916 a Zurigo", d: 5 },
+  { q: "Chi ha creato le 'Ninfee'?", a: "Claude Monet", d: 3 },
+  { q: "Quale artista italiano è famoso per le 'nature morte'?", a: "Giorgio Morandi", d: 5 },
+  { q: "Cos'è l'arte concettuale?", a: "Arte in cui l'idea è più importante dell'estetica dell'oggetto", d: 6 },
+  { q: "Chi è Banksy?", a: "Artista di strada britannico anonimo famoso per la street art satirica", d: 3 },
+  { q: "Quale architetto ha progettato la Sagrada Família?", a: "Antoni Gaudí", d: 3 },
+  { q: "Cos'è il chiaroscuro in pittura?", a: "La tecnica di contrasto tra luce e ombra per creare volume", d: 4 },
+];
+
+// ─── CIBO ──────────────────────────────────────────────
+const ciboFacts: { q: string; a: string; d: number }[] = [
+  { q: "Da quale Paese proviene il sushi?", a: "Giappone", d: 1 },
+  { q: "Qual è l'ingrediente principale della pasta?", a: "Farina (di grano)", d: 1 },
+  { q: "Da quale Paese proviene la pizza?", a: "Italia", d: 1 },
+  { q: "Cos'è il wasabi?", a: "Una pasta verde piccante giapponese", d: 2 },
+  { q: "Quale frutto è noto come 'il re dei frutti' nel Sud-est asiatico?", a: "Durian", d: 4 },
+  { q: "Qual è la spezia più costosa al mondo?", a: "Zafferano", d: 3 },
+  { q: "Da quale animale si ottiene il prosciutto?", a: "Maiale", d: 1 },
+  { q: "Qual è il formaggio italiano più esportato?", a: "Parmigiano Reggiano", d: 2 },
+  { q: "Da quale pianta si ottiene il cioccolato?", a: "Cacao", d: 1 },
+  { q: "Quale Paese è il maggior produttore di caffè al mondo?", a: "Brasile", d: 3 },
+  { q: "Cos'è il tofu?", a: "Un alimento derivato dalla soia", d: 2 },
+  { q: "Quale tipo di pasta ha la forma di piccole orecchie?", a: "Orecchiette", d: 2 },
+  { q: "Cos'è la fermentazione?", a: "Processo biochimico in cui microrganismi trasformano zuccheri in alcol o acidi", d: 4 },
+  { q: "Da quale regione italiana proviene il pesto?", a: "Liguria", d: 2 },
+  { q: "Cos'è l'umami?", a: "Il quinto gusto fondamentale (sapore di glutammato)", d: 4 },
+  { q: "Quale cucina usa molto il curry?", a: "Indiana (e del Sud-est asiatico)", d: 2 },
+  { q: "Cos'è la reazione di Maillard?", a: "La reazione chimica tra aminoacidi e zuccheri durante la cottura che crea sapore e colore", d: 6 },
+  { q: "Quale vino italiano è prodotto nella regione del Chianti?", a: "Chianti (Sangiovese)", d: 3 },
+  { q: "Da quale Paese proviene il kimchi?", a: "Corea", d: 3 },
+  { q: "Cos'è la cucina molecolare?", a: "Un approccio che usa tecniche scientifiche per trasformare alimenti", d: 5 },
+  { q: "Quale cereale è alla base della dieta giapponese?", a: "Riso", d: 1 },
+  { q: "Quale Paese è famoso per il kebab?", a: "Turchia", d: 2 },
+  { q: "Cos'è lo 'slow food'?", a: "Movimento nato in Italia che promuove il cibo locale e la lentezza contrapposta al fast food", d: 4 },
+];
+
+// ─── VIDEOGIOCHI ───────────────────────────────────────
+const videogiochisFacts: { q: string; a: string; d: number }[] = [
+  { q: "In quale gioco si costruiscono e distruggono blocchi in un mondo 3D?", a: "Minecraft", d: 1 },
+  { q: "Chi è il protagonista della serie Zelda?", a: "Link", d: 2 },
+  { q: "Quale console ha lanciato Nintendo nel 2017?", a: "Nintendo Switch", d: 2 },
+  { q: "Quale gioco battle royale ha la modalità 'costruzione'?", a: "Fortnite", d: 1 },
+  { q: "In quale gioco si catturano creature chiamate Pokémon?", a: "Pokémon", d: 1 },
+  { q: "Quale azienda produce la PlayStation?", a: "Sony", d: 1 },
+  { q: "In quale anno è uscito il primo Super Mario Bros?", a: "1985", d: 3 },
+  { q: "Quale gioco ha il personaggio 'Master Chief'?", a: "Halo", d: 2 },
+  { q: "Quale gioco di ruolo è ambientato a Skyrim?", a: "The Elder Scrolls V: Skyrim", d: 2 },
+  { q: "Quale gioco ha venduto più copie nella storia?", a: "Minecraft", d: 2 },
+  { q: "Chi ha creato Super Mario?", a: "Shigeru Miyamoto", d: 3 },
+  { q: "In quale gioco si esplora un mondo post-apocalittico nella Zona Contaminata?", a: "Fallout", d: 3 },
+  { q: "Quale gioco mobile ha spopolato nel 2016 con la realtà aumentata?", a: "Pokémon GO", d: 2 },
+  { q: "Cos'è un NPC?", a: "Non-Player Character (personaggio non giocante)", d: 2 },
+  { q: "Quale studio ha sviluppato The Witcher 3?", a: "CD Projekt Red", d: 3 },
+  { q: "In quale gioco si guida un idraulico che salta su piattaforme?", a: "Super Mario", d: 1 },
+  { q: "Quale gioco competitivo 5v5 è sviluppato da Riot Games?", a: "League of Legends (o Valorant)", d: 3 },
+  { q: "Cos'è un 'Easter egg' nei videogiochi?", a: "Un contenuto nascosto messo dagli sviluppatori", d: 3 },
+  { q: "Quale console è uscita nel 2020 con il suffisso 'Series X'?", a: "Xbox Series X", d: 3 },
+  { q: "In quale gioco open world si impersona un cowboy chiamato Arthur Morgan?", a: "Red Dead Redemption 2", d: 3 },
+  { q: "Quale gioco horror ha il protagonista Leon S. Kennedy?", a: "Resident Evil (2 e 4)", d: 4 },
+  { q: "Quale gioco indie racconta la storia di un bambino negli Inferi?", a: "Hades (o Binding of Isaac)", d: 5 },
+  { q: "Quale sviluppatore ha creato Dark Souls?", a: "FromSoftware", d: 4 },
+  { q: "In quale anno è stato rilasciato il primo gioco di Pac-Man?", a: "1980", d: 4 },
+];
+
+// ─── NATURA ────────────────────────────────────────────
+const naturaFacts: { q: string; a: string; d: number }[] = [
+  { q: "Qual è l'animale terrestre più veloce?", a: "Ghepardo", d: 1 },
+  { q: "Quale gas producono le piante durante la fotosintesi?", a: "Ossigeno", d: 1 },
+  { q: "Qual è il mammifero più grande del mondo?", a: "Balenottera azzurra", d: 1 },
+  { q: "Quante zampe ha un ragno?", a: "Otto", d: 1 },
+  { q: "Cos'è un ecosistema?", a: "L'insieme di organismi viventi e il loro ambiente fisico", d: 2 },
+  { q: "Quale animale è noto per cambiare colore?", a: "Camaleonte", d: 1 },
+  { q: "Cos'è la biodiversità?", a: "La varietà di specie viventi in un ecosistema", d: 2 },
+  { q: "Quale è l'albero più alto del mondo?", a: "Sequoia sempreverde (Hyperion)", d: 4 },
+  { q: "Quale processo trasforma il bruco in farfalla?", a: "Metamorfosi", d: 2 },
+  { q: "Qual è l'oceano più grande?", a: "Oceano Pacifico", d: 1 },
+  { q: "Cos'è la simbiosi?", a: "Una relazione stretta tra due specie diverse", d: 3 },
+  { q: "Quale animale ha l'impronta digitale simile a quella umana?", a: "Koala", d: 5 },
+  { q: "Cos'è il permafrost?", a: "Terreno permanentemente ghiacciato nelle regioni artiche", d: 4 },
+  { q: "Quale fiore è il simbolo del Giappone?", a: "Il ciliegio (sakura)", d: 3 },
+  { q: "Cos'è la catena alimentare?", a: "La sequenza di organismi in cui ciascuno è cibo per il successivo", d: 2 },
+  { q: "Quale animale può rigenerare parti del corpo?", a: "Salamandra (o stella marina)", d: 4 },
+  { q: "Cos'è l'effetto serra?", a: "L'intrappolamento del calore nell'atmosfera da parte di gas serra", d: 3 },
+  { q: "Quale è la foresta pluviale più grande?", a: "Amazzonia", d: 2 },
+  { q: "Cos'è un bioma?", a: "Una grande comunità ecologica definita da clima e vegetazione", d: 4 },
+  { q: "Quale insetto è il più forte in proporzione al suo peso?", a: "Scarabeo rinoceronte", d: 5 },
+  { q: "Cos'è la desertificazione?", a: "La trasformazione di terre fertili in deserti", d: 3 },
+  { q: "Quale pianta è carnivora e cattura insetti con trappole a scatto?", a: "Venere acchiappamosche (Dionaea muscipula)", d: 4 },
+];
+
+// ─── ECONOMIA ──────────────────────────────────────────
+const economiaFacts: { q: string; a: string; d: number }[] = [
+  { q: "Cos'è il PIL?", a: "Prodotto Interno Lordo, il valore totale dei beni e servizi prodotti", d: 2 },
+  { q: "Cos'è l'inflazione?", a: "L'aumento generalizzato dei prezzi nel tempo", d: 2 },
+  { q: "Quale valuta usa l'Unione Europea?", a: "Euro (€)", d: 1 },
+  { q: "Cos'è una azione (in borsa)?", a: "Una quota di proprietà di un'azienda", d: 2 },
+  { q: "Quale banca è la banca centrale degli USA?", a: "Federal Reserve (Fed)", d: 3 },
+  { q: "Cos'è la domanda e l'offerta?", a: "Le forze di mercato che determinano prezzi e quantità", d: 2 },
+  { q: "Quale economista ha scritto 'La ricchezza delle nazioni'?", a: "Adam Smith", d: 3 },
+  { q: "Cos'è una recessione?", a: "Un calo significativo dell'attività economica per almeno due trimestri", d: 3 },
+  { q: "Cos'è il tasso di cambio?", a: "Il valore di una valuta rispetto a un'altra", d: 3 },
+  { q: "Quale criptovaluta è stata la prima ad essere creata?", a: "Bitcoin", d: 2 },
+  { q: "Cos'è il debito pubblico?", a: "Il totale dei debiti contratti dallo Stato", d: 3 },
+  { q: "Cos'è un monopolio?", a: "Quando un'unica azienda controlla un intero mercato", d: 3 },
+  { q: "Chi ha fondato Amazon?", a: "Jeff Bezos", d: 2 },
+  { q: "Cos'è il libero mercato?", a: "Un mercato con minima regolamentazione governativa", d: 3 },
+  { q: "Cos'è la stagflazione?", a: "Inflazione alta combinata con stagnazione economica", d: 5 },
+  { q: "Cos'è il quantitative easing?", a: "Politica monetaria in cui la banca centrale acquista titoli per stimolare l'economia", d: 6 },
+  { q: "Quale economista è associato alla teoria keynesiana?", a: "John Maynard Keynes", d: 4 },
+  { q: "Cos'è un ETF?", a: "Exchange-Traded Fund, un fondo che replica un indice ed è scambiato in borsa", d: 5 },
+  { q: "Cos'è il deficit di bilancio?", a: "Quando le spese dello Stato superano le entrate", d: 4 },
+  { q: "Quale indice misura la borsa italiana?", a: "FTSE MIB", d: 4 },
+  { q: "Cos'è il venture capital?", a: "Investimento in aziende giovani ad alto potenziale di crescita", d: 5 },
+];
+
+// ─── ATTUALITÀ ─────────────────────────────────────────
+const attualitaFacts: { q: string; a: string; d: number }[] = [
+  { q: "Quale organizzazione mondiale si occupa di salute?", a: "OMS (Organizzazione Mondiale della Sanità)", d: 1 },
+  { q: "In quale anno è iniziata la pandemia di COVID-19?", a: "2019-2020", d: 1 },
+  { q: "Quale Paese ha invaso l'Ucraina nel 2022?", a: "Russia", d: 1 },
+  { q: "Cos'è il cambiamento climatico?", a: "Il riscaldamento globale causato dalle emissioni di gas serra", d: 2 },
+  { q: "Cos'è l'Accordo di Parigi?", a: "Un trattato internazionale per limitare il riscaldamento globale", d: 3 },
+  { q: "Quale movimento giovanile per il clima è stato ispirato da Greta Thunberg?", a: "Fridays for Future", d: 2 },
+  { q: "Cos'è la NATO?", a: "Organizzazione del Trattato dell'Atlantico del Nord", d: 2 },
+  { q: "Quale Paese ha ospitato i Mondiali di calcio nel 2022?", a: "Qatar", d: 2 },
+  { q: "Cosa significa 'sostenibilità'?", a: "Soddisfare i bisogni attuali senza compromettere quelli futuri", d: 2 },
+  { q: "Cos'è l'intelligenza artificiale generativa?", a: "AI che crea contenuti nuovi (testo, immagini, video)", d: 3 },
+  { q: "Chi è il Segretario Generale dell'ONU (dal 2017)?", a: "António Guterres", d: 4 },
+  { q: "Quale criptovaluta ha avuto il crollo più noto nel 2022?", a: "Luna/TerraUSD", d: 5 },
+  { q: "Quale è l'obiettivo dell'Agenda 2030 dell'ONU?", a: "17 Obiettivi di Sviluppo Sostenibile", d: 4 },
+  { q: "Cos'è la transizione energetica?", a: "Il passaggio da fonti fossili a fonti rinnovabili", d: 3 },
+  { q: "Quale tecnologia permette di creare video falsi realistici?", a: "Deepfake", d: 3 },
+  { q: "In quale anno il Regno Unito ha completato la Brexit?", a: "2020", d: 3 },
+  { q: "Cos'è il GDPR?", a: "Regolamento Generale sulla Protezione dei Dati dell'UE", d: 4 },
+  { q: "Quale social media è stato acquistato da Elon Musk nel 2022?", a: "Twitter (ora X)", d: 2 },
+  { q: "Cos'è l'economia circolare?", a: "Un modello che minimizza rifiuti e riutilizza risorse", d: 4 },
+];
+
+// ─── MITOLOGIA ─────────────────────────────────────────
+const mitologiaFacts: { q: string; a: string; d: number }[] = [
+  { q: "Chi è il re degli dei nell'Olimpo greco?", a: "Zeus", d: 1 },
+  { q: "Quale eroe greco ha combattuto il Minotauro?", a: "Teseo", d: 2 },
+  { q: "Chi è il dio romano della guerra?", a: "Marte", d: 1 },
+  { q: "Quale creatura mitologica è metà uomo e metà cavallo?", a: "Centauro", d: 1 },
+  { q: "Chi è la dea greca della saggezza?", a: "Atena", d: 2 },
+  { q: "Quale eroe ha compiuto le 12 fatiche?", a: "Eracle (Ercole)", d: 2 },
+  { q: "Chi è il dio norreno del tuono?", a: "Thor", d: 1 },
+  { q: "Cos'è il Valhalla?", a: "Il paradiso dei guerrieri nella mitologia norrena", d: 2 },
+  { q: "Quale mostro ha serpenti al posto dei capelli?", a: "Medusa", d: 1 },
+  { q: "Chi è il messaggero degli dei greci?", a: "Ermes (Mercurio)", d: 2 },
+  { q: "Quale titano fu condannato a reggere il cielo?", a: "Atlante", d: 3 },
+  { q: "Chi è il dio egizio dei morti?", a: "Anubi", d: 3 },
+  { q: "Quale eroe omerico ideò il cavallo di Troia?", a: "Ulisse (Odisseo)", d: 2 },
+  { q: "Cos'è il Ragnarok?", a: "La fine del mondo nella mitologia norrena", d: 3 },
+  { q: "Chi è la dea egizia della magia?", a: "Iside", d: 4 },
+  { q: "Quale creatura mitologica rinasce dalle proprie ceneri?", a: "La Fenice", d: 2 },
+  { q: "Chi è il dio greco del mare?", a: "Poseidone", d: 1 },
+  { q: "Cos'è lo Stige?", a: "Il fiume degli inferi nella mitologia greca", d: 3 },
+  { q: "Chi è il fabbro degli dei nell'Olimpo?", a: "Efesto (Vulcano)", d: 3 },
+  { q: "Quale semidio sumero è protagonista di un'epica antica?", a: "Gilgamesh", d: 4 },
+  { q: "Cos'è l'Yggdrasil?", a: "L'albero cosmico nella mitologia norrena", d: 5 },
+  { q: "Chi è la dea greca della caccia?", a: "Artemide (Diana)", d: 2 },
+  { q: "Quale mostro a tre teste sorveglia gli Inferi greci?", a: "Cerbero", d: 2 },
+  { q: "Chi è il dio azteco del sole e della guerra?", a: "Huitzilopochtli", d: 7 },
+  { q: "Quale gigante nordico è il padre di Loki?", a: "Fárbauti", d: 7 },
+  { q: "Chi è il dio induista della distruzione e rigenerazione?", a: "Shiva", d: 4 },
+];
+
+// ─── Category mapping ─────────────────────────────────
+const categoryPools: Record<string, { q: string; a: string; d: number }[]> = {
+  "MCU": mcuFacts,
+  "Storia": storiaFacts,
+  "Scienza": scienzaFacts,
+  "Spazio": spazioFacts,
+  "Geografia": geografiaFacts,
+  "Italiano": italianoFacts,
+  "Matematica": matematicaFacts,
+  "Sport": sportFacts,
+  "Film": filmFacts,
+  "Serie TV": serieTvFacts,
+  "Musica": musicaFacts,
+  "Tecnologia": tecnologiaFacts,
+  "Cultura pop": culturaPopFacts,
+  "Arte": arteFacts,
+  "Cibo": ciboFacts,
+  "Videogiochi": videogiochisFacts,
+  "Natura": naturaFacts,
+  "Economia": economiaFacts,
+  "Attualità": attualitaFacts,
+  "Mitologia": mitologiaFacts,
 };
 
-// Used questions tracker (session-based)
-const usedQuestionIndices: Record<string, Set<number>> = {};
+const categoryGenerators: Record<string, QuestionGenerator[]> = {
+  "Matematica": matematicaGenerators,
+};
 
-function getSessionKey(): string {
-  if (typeof window !== 'undefined') {
-    let key = sessionStorage.getItem('jeopardy-session-key');
-    if (!key) {
-      key = Date.now().toString(36) + Math.random().toString(36).slice(2);
-      sessionStorage.setItem('jeopardy-session-key', key);
+// Track used questions within a single game session
+let usedInSession: Set<string> = new Set();
+
+function questionKey(q: string): string {
+  return q.trim().toLowerCase();
+}
+
+/**
+ * Get a question for a category at a given difficulty level.
+ * Uses a combination of static pools and dynamic generators.
+ * Questions are shuffled each time and tracked to avoid repeats within a session.
+ */
+export function getQuestion(
+  category: string,
+  difficultyLevel: number,
+  maxLevels: number
+): Question | null {
+  // Map difficulty level (1-based) to difficulty score (1-10)
+  const targetDifficulty = Math.round((difficultyLevel / maxLevels) * 8) + 1;
+
+  // Try dynamic generators first (for categories that have them)
+  const generators = categoryGenerators[category];
+  if (generators && Math.random() > 0.4) {
+    // 60% chance to use generator for variety
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const gen = pick(generators);
+      const q = gen(targetDifficulty);
+      const key = questionKey(q.question);
+      if (!usedInSession.has(key)) {
+        usedInSession.add(key);
+        return q;
+      }
     }
-    return key;
-  }
-  return 'default';
-}
-
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
-export function getQuestion(category: string, difficultyLevel: number, maxLevels: number): Question | null {
-  const pool = questionPools[category];
-  if (!pool) return null;
-
-  const sessionKey = getSessionKey();
-  const trackingKey = `${sessionKey}-${category}`;
-  if (!usedQuestionIndices[trackingKey]) {
-    usedQuestionIndices[trackingKey] = new Set();
   }
 
-  // Map difficulty level to a difficulty range
-  const minDiff = Math.max(1, Math.floor((difficultyLevel / maxLevels) * 7));
-  const maxDiff = Math.min(7, minDiff + 2);
+  // Use static pool
+  const pool = categoryPools[category];
+  if (!pool || pool.length === 0) return null;
 
-  // Find eligible questions sorted by difficulty proximity
-  const eligible = pool
-    .map((q, idx) => ({ ...q, idx }))
-    .filter(q => !usedQuestionIndices[trackingKey].has(q.idx))
-    .filter(q => q.difficulty >= minDiff - 1 && q.difficulty <= maxDiff + 1)
-    .sort((a, b) => {
-      const targetDiff = (minDiff + maxDiff) / 2;
-      return Math.abs(a.difficulty - targetDiff) - Math.abs(b.difficulty - targetDiff);
-    });
+  // Sort by distance to target difficulty, then shuffle within same distance
+  const candidates = pool
+    .filter(q => !usedInSession.has(questionKey(q.q)))
+    .map(q => ({
+      ...q,
+      dist: Math.abs(q.d - targetDifficulty),
+    }))
+    .sort((a, b) => a.dist - b.dist);
 
-  if (eligible.length === 0) {
-    // Fallback: use any unused question
-    const fallback = pool
-      .map((q, idx) => ({ ...q, idx }))
-      .filter(q => !usedQuestionIndices[trackingKey].has(q.idx));
-    if (fallback.length === 0) return null;
-    const picked = shuffleArray(fallback)[0];
-    usedQuestionIndices[trackingKey].add(picked.idx);
-    return { question: picked.question, answer: picked.answer, difficulty: picked.difficulty };
+  if (candidates.length === 0) {
+    // All used - clear and retry (should be rare with large pools)
+    return null;
   }
 
-  // Pick from top candidates with some randomness
-  const topCandidates = eligible.slice(0, Math.min(5, eligible.length));
-  const picked = shuffleArray(topCandidates)[0];
-  usedQuestionIndices[trackingKey].add(picked.idx);
-  return { question: picked.question, answer: picked.answer, difficulty: picked.difficulty };
+  // Pick from the closest difficulty matches with some randomness
+  const minDist = candidates[0].dist;
+  const closests = candidates.filter(c => c.dist <= minDist + 2);
+  const picked = pick(closests);
+  
+  usedInSession.add(questionKey(picked.q));
+  return { question: picked.q, answer: picked.a, difficulty: picked.d };
 }
 
 export function resetUsedQuestions(): void {
-  // Generate a new session key to ensure fresh questions
-  if (typeof window !== 'undefined') {
-    const key = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    sessionStorage.setItem('jeopardy-session-key', key);
-  }
-  Object.keys(usedQuestionIndices).forEach(key => delete usedQuestionIndices[key]);
+  usedInSession = new Set();
 }
 
 export const ALL_CATEGORIES = [
