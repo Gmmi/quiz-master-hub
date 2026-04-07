@@ -47,6 +47,16 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        jeopardy: {
+          blue: "hsl(var(--jeopardy-blue))",
+          "blue-light": "hsl(var(--jeopardy-blue-light))",
+          gold: "hsl(var(--jeopardy-gold))",
+          "gold-dim": "hsl(var(--jeopardy-gold-dim))",
+          cell: "hsl(var(--jeopardy-cell))",
+          "cell-hover": "hsl(var(--jeopardy-cell-hover))",
+          correct: "hsl(var(--jeopardy-correct))",
+          wrong: "hsl(var(--jeopardy-wrong))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
